@@ -62,6 +62,10 @@ export default function PythonCodeEditor({args, updateArgs}:{args: ConsoleArg[],
                 console.log(`Data from ${apiURL},`, data)
                 if(evaluatingCode) {
                     updateArgs([{
+                        message: "Successfully evaluated code...",
+                        status: "info"
+                    }])
+                    updateArgs([{
                         message: data.result,
                         status: "evaluation"
                     },{
@@ -69,6 +73,10 @@ export default function PythonCodeEditor({args, updateArgs}:{args: ConsoleArg[],
                         status: "output"
 ,                    }])
                 } else {
+                    updateArgs([{
+                        message: "Successfully executed code...",
+                        status: "info"
+                    }])
                     updateArgs([{
                         message: data.output,
                         status: "output"
@@ -90,15 +98,16 @@ export default function PythonCodeEditor({args, updateArgs}:{args: ConsoleArg[],
     
     const handleKeyDown = (e : KeyboardEvent) => {
         if(e.ctrlKey || e.metaKey) {
-            e.preventDefault()
             let key : string = e.key.toLowerCase()
             console.log("Key pressed down was: ", key)
             switch (key) {
                 case "s":
+                    e.preventDefault()
                     console.log("Handling Python request")
                     sendPythonRequest(pythonCode)
                     break
                 case "e":
+                    e.preventDefault()
                     setEvaluatingCode(!evaluatingCode)
                     break
                 
