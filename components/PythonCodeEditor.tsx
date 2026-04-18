@@ -1,7 +1,13 @@
 "use client"
 // TODO: 
-// - Handle the output from /exec and /eval, 
-// - Handle the errors from /exec and /eval, 
+// (TRAME RELATED)
+// - Make a Trame Mini-Demo or Display Component
+// - Get some basic Trame demo present
+// (CONSOLE RELATED)
+// - Handle the result from /exec and /eval [Done]
+// - Handle the output from /exec and /eval, [Done]
+// - Handle the errors from /exec and /eval, [Done]
+// (BACKEND RELATED)
 // - Establish a peristent namespace
 // - Establish only variable, function names but not libraries in namespace
 
@@ -12,21 +18,27 @@ import { exec } from "child_process"
 
 const themeKeys = Object.keys(themes)
 
-export default function PythonCodeEditor() {
+export default function PythonCodeEditor({updateArgs}:{updateArgs:Function}) {
+    // Monaco Editor States
     const monaco = useMonaco()
     const [pythonCode, setPythonCode] = useState("")
     const [themeName, setThemeName] = useState("vs-light")
     const [backgroundColor, setBackgroundColor] = useState("#fff")
-    const [evaluateCode, setEvaluateCode] = useState(true)
+    const [evaluatingCode, setEvaluatingCode] = useState(true)
     const [processingCode, setProcessingCode] = useState(false)
-    const [output, setOutput] = useState("")
-    const [errorOutput, setErrorOutput] = useState("")
 
+    // Python Console States
+    const [consoleArgs, setConsoleArgs] = useState([])
+
+    // Python Code Evaluation
     const sendPythonRequest = async (code: string) => {
         setProcessingCode(true)
-        let apiURL = evaluateCode ? "/api/eval" : "/api/exec"
+        let apiURL = evaluatingCode ? "/api/eval" : "/api/exec"
         console.log("Code passed in: ", JSON.stringify({code}))
-
+        updateArgs([{
+            message: evaluatingCode ? "Evaluating your expression..." : "Executing code...",
+            status: "info"
+        }])
         try {
             let data = await fetch(apiURL, {
                 method: "POST",
@@ -41,21 +53,41 @@ export default function PythonCodeEditor() {
             console.log("Data: ", data)
 
             if (data.error) {
-                handleMessage(data.error, "error")
+                updateArgs([{
+                    message: data.error,
+                    status: "error"
+                }])
             } else {
                 console.log(`Data from ${apiURL},`, data)
+                if(evaluatingCode) {
+                    updateArgs([{
+                        message: data.result,
+                        status: "evaluation"
+                    },{
+                        message: data.output,
+                        status: "output"
+,                    }])
+                } else {
+                    updateArgs([{
+                        message: data.output,
+                        status: "output"
+                    }])
+                }
             }
         } catch (error) {
             const errorMessage = `Failed to send the request Python code snippet to ${apiURL}`
             console.log(error)
             console.log(errorMessage)
-            handleMessage(errorMessage, "error")
+            updateArgs({
+                message: errorMessage,
+                status: "error"
+            })
         }
         setProcessingCode(false)
 
     }
 
-    const handleMessage = (message: string, type: string = "message") => {
+    const handleMessage = (message: string, status: string = "message") => {
 
     }
 
@@ -79,9 +111,12 @@ export default function PythonCodeEditor() {
     }, [themeName]);
 
     return (
-        <div className="w-1/2 font-sans flex flex-col space-y-2 bg-white rounded-md px-12 py-6">
-            <p className="font-semibold">Python Code Editor. <br /><span className="text-xs font-normal text-blue-400">Enter your Python code here prior to it being run...</span></p>
-            <select onChange={(e) => setThemeName(e.target.value)} className={`decoration-blue-200 selection:border-blue-400  border-2 px-4 py-2 rounded-md`} name="" id="">
+        <div className="w-1/2 container">
+            <p className="font-semibold">Python Code Editor. 
+            <br />
+            <span className="text-xs font-normal text-blue-400">Enter your Python code here prior to it being run...</span>
+            </p>
+            <select onChange={(e) => setThemeName(e.target.value)} className="select-container" name="" id="">
                 <option className="border-blue-400 border-2" value="vs-light">VS Light</option>
                 <option className="border-blue-400 border-2" value="vs-dark">VS Dark</option>
                 {themeKeys.map((theme) => (
@@ -104,8 +139,8 @@ export default function PythonCodeEditor() {
             <div className="flex gap-x-2 items-center">
                 <label className="flex items-center cursor-pointer relative">
                     <input type="checkbox" onChange={(e) => {
-                        setEvaluateCode(e.target.checked)
-                    }} checked={evaluateCode} className={`peer appearance-none w-4 h-4 ring-transparent border rounded border-slate-200 bg-slate-100 ring-2 checked:bg-blue-500 focus:ring-blue-100`} name="" id="" />
+                        setEvaluatingCode(e.target.checked)
+                    }} checked={evaluatingCode} className={`peer appearance-none w-4 h-4 ring-transparent border rounded border-slate-200 bg-slate-100 ring-2 checked:bg-blue-500 focus:ring-blue-100`} name="" id="" />
                     <span className="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" strokeWidth="1">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>

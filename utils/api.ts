@@ -1,5 +1,6 @@
 let currentBackend : Backend | null = null
 
+const RETRY_TIME_SECONDS = 0.5
 
 class Backend {
     backendDomain: string;
@@ -60,7 +61,9 @@ class Backend {
         } catch (error) {
             console.log(`Failed to fetch from ${path}, received error: ${error}`)
             if(requestCount < 3) {
-                return await this.sendRequest(path, method, data, additionalHeaders, requestCount+1)
+                setTimeout(async ()=>{
+                    return await this.sendRequest(path, method, data, additionalHeaders, requestCount+1)
+                }, RETRY_TIME_SECONDS*1000)
             } else {
                 return {
                     success: false,
