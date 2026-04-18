@@ -12,7 +12,6 @@ class Backend {
         console.log("Sending execution request...")
         const data = await this.sendRequest("/exec", "POST", {code})
         if(!data.error) {
-            console.log("Data returned was: ", data)
             return data
         } else {
             return {
@@ -22,8 +21,18 @@ class Backend {
         }
     }
 
-    sendEvalRequest(code : string) {
-        
+    async sendEvalRequest(expr : string) {
+        console.log("Sending evaluation request...")
+        console.log("Expression: ", expr)
+        const data = await this.sendRequest("/eval", "POST", {expr})
+        if(!data.error) {
+            return data
+        } else {
+            return {
+                success: false,
+                error: data.error
+            }
+        }
     }
 
     async sendRequest(path : string, method : string = "GET", data : any = null, additionalHeaders : {[key: string]: any} = {}, requestCount : number = 1): Promise<any> {
@@ -76,6 +85,13 @@ const sendExecRequest = async (code : string) => {
     return data
 }
 
+const sendEvalRequest = async (code : string) => {
+    const backend = await getBackend()
+    const data = await backend.sendEvalRequest(code)
+    return data
+}
+
 export {
-    sendExecRequest
+    sendExecRequest,
+    sendEvalRequest
 }

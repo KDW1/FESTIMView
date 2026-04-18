@@ -17,9 +17,8 @@ def index():
 
 @app.route("/exec", methods=["POST", "GET"])
 def execute_code():
-    print("Received a request to /exec")
+    app.logger.info("Received a request to /exec")
     if request.method == "POST":
-        print("I received a POST request")
         data = request.json
         code = data.get("code", "")
 
@@ -70,7 +69,57 @@ def execute_code():
 
 @app.route("/eval", methods=["POST", "GET"])
 def evaluate_expression():
-    return jsonify("This is the /eval route")
+    app.logger.info("Received a request to /eval")
+    if request.method == "POST":
+        data = request.json
+        expr = data.get("expr", "")
+
+        if not expr.strip():
+            return jsonify({
+                "success": False,
+                "error": "No expression provided..."
+            }), 400
+        
+        stdout_capture = io.StringIO()
+        stderr_capture = io.StringIO()
+
+        temp_namespace = {}
+
+        try:
+            app.logger.info("Expression: ", expr)
+            with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                result = eval(expr, temp_namespace)
+            
+            output = stdout_capture.getvalue()
+            error_output = stderr_capture.getvalue()
+            
+            if error_output:
+                print("There was an error output oh no: ", error_output)
+                return jsonify({
+                    "success": False,
+                    "error": error_output
+                })
+            
+            return jsonify({
+                "success": True,
+                "result": result,
+                "output": output
+            })
+        except SyntaxError as e:
+            return jsonify({
+                "success": False,
+                "error": f"Syntax Error: {str(e)}"
+            }), 400
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "error": f"Error: {str(e)}"
+            }), 400
+    else:
+        return jsonify({
+            "success": False,
+            "message": "This /eval path only receives POST requests..."
+        }), 400
 
 if __name__ == "__main__":
     port = int(os.getenv("FLASK_PORT", 8000))

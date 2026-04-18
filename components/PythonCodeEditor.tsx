@@ -1,4 +1,10 @@
 "use client"
+// TODO: 
+// - Handle the output from /exec and /eval, 
+// - Handle the errors from /exec and /eval, 
+// - Establish a peristent namespace
+// - Establish only variable, function names but not libraries in namespace
+
 import { Editor, MonacoDiffEditor, useMonaco } from "@monaco-editor/react"
 import { useEffect, useRef, useState } from "react"
 import themes from "@/utils/themes"
@@ -107,7 +113,7 @@ export default function PythonCodeEditor() {
                     </span>
                 </label>
                 <p className="text-blue-400">
-                    Evaluate Code
+                    Evaluate as Expression
                 </p>
             </div>
             <div className="flex gap-x-2 items-end">

@@ -8,7 +8,6 @@ export async function GET() {
 export async function POST(req : Request) {
   const { code } = await req.json()
   const data = await sendExecRequest(code)
-  return Response.json({
-    projectName: 'Next.js',
-  })
+  console.log("Data from /api/exec:",data)
+  return Response.json(data)
 }
