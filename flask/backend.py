@@ -12,8 +12,6 @@ load_dotenv()
 
 app = Flask(__name__)
 
-universal_namespace = {}
-
 @app.route("/")
 def index():
     return jsonify({"success": True, "message": "Server is online and running..."})
@@ -38,7 +36,7 @@ def execute_code():
 
         try:
             with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-                exec(code, universal_namespace)
+                exec(code, temp_namespace)
             
             output = stdout_capture.getvalue()
             error_output = stderr_capture.getvalue()
@@ -49,13 +47,9 @@ def execute_code():
                     "success": False,
                     "error": error_output
                 })
-            app.logger.info("The Namespace follows: ")
-            del universal_namespace["__builtins__"]
-            json_namespace = json.dumps(universal_namespace, indent=4, sort_keys=True, default=str)
             return jsonify({
                 "success": True,
-                "output": output,
-                "namespace": json_namespace
+                "output": output
             })
         except SyntaxError as e:
             return jsonify({
@@ -94,7 +88,7 @@ def evaluate_expression():
         try:
             app.logger.info("Expression: ", expr)
             with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-                result = eval(expr, universal_namespace)
+                result = eval(expr, temp_namespace)
             
             output = stdout_capture.getvalue()
             error_output = stderr_capture.getvalue()

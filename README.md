@@ -9,5 +9,4 @@ The primary features of the Python Editor are as follows:
 - Execute code as a program
 - View console notifications that track general notifications pertaining to information, errors, outputs, results, etc...
 - Keyboard shortcuts for toggling evaluation, running the program
-- Have a persistent, session specific namespace (WIP) [How to transfer namespace to Python and Back???? Is that necessary?]
-[Most likely will have a selective namespace for variables alone, ignoring modules. Just simple bindings...]
+- Currently there are temporary namespaces for each evaluation and expression
