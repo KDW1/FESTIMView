@@ -7,7 +7,7 @@ export type ConsoleArg = {
 
 export default function PythonConsole({ args }: { args: ConsoleArg[] }) {
     const argColors: { [key: string]: string } = {
-        "info": "text-blue-700 italic",
+        "info": "text-indigo-700",
         "error": "text-rose-700",
         "output": "text-amber-500",
         "evaluation": "text-green-500"
@@ -25,7 +25,7 @@ export default function PythonConsole({ args }: { args: ConsoleArg[] }) {
                 return "OUTPUT: "
                 break
             case "evaluation":
-                return "RESULT:"
+                return "RESULT: "
         }
     }
 
@@ -35,7 +35,10 @@ export default function PythonConsole({ args }: { args: ConsoleArg[] }) {
             <div className="h-full flex flex-col overflow-y-auto pb-2 bg-slate-950 text-xs rounded-md">
                 {
                     args.map((arg, i) => (
-                        <p key={`arg${i}`} className={`w-full px-4 py-2 font-mono ${argColors[arg.status]} border-b-2 border-slate-800`}>{getPrefix(arg.message)}{arg.message}</p>
+                        <p key={`arg${i}`} className={`w-full px-4 py-2 font-mono ${argColors[arg.status]} border-b-2 border-slate-800`}>
+                            <span className="font-semibold">{getPrefix(arg.status)}</span>
+                            {arg.message}
+                            </p>
                     ))
                 }
                 {args.length == 0 &&

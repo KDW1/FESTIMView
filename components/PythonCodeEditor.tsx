@@ -15,10 +15,11 @@ import { Editor, MonacoDiffEditor, useMonaco } from "@monaco-editor/react"
 import { useEffect, useRef, useState } from "react"
 import themes from "@/utils/themes"
 import { exec } from "child_process"
+import { ConsoleArg } from "./PythonConsole"
 
 const themeKeys = Object.keys(themes)
 
-export default function PythonCodeEditor({updateArgs}:{updateArgs:Function}) {
+export default function PythonCodeEditor({args, updateArgs}:{args: ConsoleArg[], updateArgs:Function}) {
     // Monaco Editor States
     const monaco = useMonaco()
     const [pythonCode, setPythonCode] = useState("")
@@ -33,12 +34,12 @@ export default function PythonCodeEditor({updateArgs}:{updateArgs:Function}) {
     // Python Code Evaluation
     const sendPythonRequest = async (code: string) => {
         setProcessingCode(true)
-        let apiURL = evaluatingCode ? "/api/eval" : "/api/exec"
-        console.log("Code passed in: ", JSON.stringify({code}))
         updateArgs([{
             message: evaluatingCode ? "Evaluating your expression..." : "Executing code...",
             status: "info"
         }])
+        let apiURL = evaluatingCode ? "/api/eval" : "/api/exec"
+        console.log("Code passed in: ", JSON.stringify({code}))
         try {
             let data = await fetch(apiURL, {
                 method: "POST",
@@ -78,18 +79,40 @@ export default function PythonCodeEditor({updateArgs}:{updateArgs:Function}) {
             const errorMessage = `Failed to send the request Python code snippet to ${apiURL}`
             console.log(error)
             console.log(errorMessage)
-            updateArgs({
+            updateArgs([{
                 message: errorMessage,
                 status: "error"
-            })
+            }])
         }
         setProcessingCode(false)
 
     }
+    
+    const handleKeyDown = (e : KeyboardEvent) => {
+        if(e.ctrlKey || e.metaKey) {
+            e.preventDefault()
+            let key : string = e.key.toLowerCase()
+            console.log("Key pressed down was: ", key)
+            switch (key) {
+                case "s":
+                    console.log("Handling Python request")
+                    sendPythonRequest(pythonCode)
+                    break
+                case "e":
+                    setEvaluatingCode(!evaluatingCode)
+                    break
+                
 
-    const handleMessage = (message: string, status: string = "message") => {
-
+            }
+        }
     }
+
+    useEffect(()=>{
+        window.addEventListener("keydown", handleKeyDown)
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown)
+        }
+    }, [sendPythonRequest])
 
     useEffect(() => {
 
@@ -150,13 +173,15 @@ export default function PythonCodeEditor({updateArgs}:{updateArgs:Function}) {
                 <p className="text-blue-400">
                     Evaluate as Expression
                 </p>
+                <span className="font-normal text-blue-200 italic">Ctrl+E</span>
             </div>
             <div className="flex gap-x-2 items-end">
                 <button disabled={processingCode} onClick={(e) => {
                     sendPythonRequest(pythonCode)
-                }} className={`px-4 py-2 cursor-pointer disabled:bg-gray-300 hover:bg-blue-300 duration ease-in-out transition bg-blue-200 rounded-md`}>
+                }} className={`px-2 py-1 cursor-pointer disabled:bg-gray-300 hover:bg-blue-300 duration ease-in-out transition bg-blue-200 rounded-md`}>
                     Run Code
                 </button>
+                <span className="font-normal text-blue-200 italic">Ctrl+S</span>
             </div>
         </div>
     )

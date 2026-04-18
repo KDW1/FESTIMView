@@ -9,12 +9,12 @@ import Image from "next/image";
 export default function Home() {
   const [args, setArgs] = useState<ConsoleArg[]>([])
   const updateArgs = (newArgs:ConsoleArg[]) => {
-    setArgs([...args,...(newArgs.filter(el => el.message))])
+    setArgs(args=>[...args,...(newArgs.filter(el => el.message))])
   }
   return (
     <div className="h-screen bg-blue-300">
       <main className="px-16 py-16 h-full mx-auto flex flex-row gap-4">
-        <PythonCodeEditor  updateArgs={updateArgs} />
+        <PythonCodeEditor args={args} updateArgs={updateArgs} />
         <PythonConsole args={args}/>
       </main>
     </div>
