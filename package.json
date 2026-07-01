@@ -8,7 +8,7 @@
     "build": "next build",
     "init": "conda config --add channels conda-forge && conda clean --all -y && conda create -n festim-env -y && conda -n festim-env install -c conda-forge festim",
     "start:all": "concurrently \"npm run dev\" \"npm run start:trame\" \"npm run start:backend\"",
-    "start:backend": "conda run -n festim-env python ./python/backend",
+    "start:backend": "conda run -n festim-env python python/backend.py",
     "start:trame": "python ./python/trame/app.py --server",
     "start": "next start",
     "lint": "eslint"

@@ -1,9 +1,7 @@
 import os
 import vtk
 import adios2
-import vtk
 import math
-from make_unstructured_grid import write_down_ugrid
 from vtkmodules.util.numpy_support import vtk_to_numpy
 import numpy as np
 
@@ -22,8 +20,13 @@ import numpy as np
 # TODO: Learn how to incorporate the field data
 
 input_filepath = os.path.join(os.getcwd(), "out/field_export.bp")
-# print(input_filepath)
 
+def write_down_ugrid(ugrid, filepath):
+    writer = vtk.vtkXMLUnstructuredGridWriter()
+    writer.SetInputDataObject(ugrid)
+    writer.SetFileName(os.path.join(os.getcwd(), filepath))
+    writer.Write()
+    
 def add_relevant_point_data(dataset, values):
         fields = ["H_1", "H_trapped_1", "empty_trap_1"]
         for field in fields:
@@ -142,6 +145,6 @@ def read_bp_file_to(input_filepath, output_filepath_prefix):
     
 
 # 2. Execute code AFTER the stream is finished
-relevant_values, relevant_vars = read_bp_file_to("out/field_export.bp", "out/vtk/2d_permeation/example")
+relevant_values, relevant_vars = read_bp_file_to("out/field_export.bp", "vtk_temp/example")
 # print("Relevant Values' Keys: ", relevant_values.keys())
 # print("Relevant Variables' Keys: ", relevant_vars)

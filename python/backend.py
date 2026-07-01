@@ -6,8 +6,31 @@ from dotenv import load_dotenv
 import io
 import sys
 from contextlib import redirect_stdout, redirect_stderr
+from read_my_bp import read_bp_file_to
 
 load_dotenv()
+
+def zip_from_folder(folder_name):
+    filepath = os.path.join(os.getcwd(), folder_name)
+    
+    import zipfile
+    import time
+
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    download_name = "field_export.zip".format(timestr)
+    memory_file = io.BytesIO()
+
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(filepath, topdown=False):
+            for file in files:
+                indexOfOut = root.index(folder_name)
+                zipf.write(os.path.join(root[indexOfOut:], file))
+    memory_file.seek(0)
+    
+    app.logger.info("Current Working Directory: " + os.getcwd())
+    app.logger.info("Returning .zip file of: " +  filepath)
+    
+    return memory_file, download_name
 
 app = Flask(__name__)
 
@@ -62,29 +85,9 @@ def execute_code():
                 if error_output:
                     app.logger.info("Error output occurred...")
                     app.logger.info(error_output)
-                filename = "out"
-                filepath = os.path.join(os.getcwd(), filename)
-                
-                import zipfile
-                import time
-
-                timestr = time.strftime("%Y%m%d-%H%M%S")
-                fileName = "field_export.zip".format(timestr)
-                memory_file = io.BytesIO()
-
-                with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                    for root, dirs, files in os.walk(filepath, topdown=False):
-                        for file in files:
-                            indexOfOut = root.index(filename)
-                            zipf.write(os.path.join(root[indexOfOut:], file))
-                memory_file.seek(0)
-
-                app.logger.info("Current Working Directory: " + os.getcwd())
-                app.logger.info("Returning .zip file of: " +  filepath)
-
-                # Generate the .zip file
-
-                return send_file(memory_file, download_name=fileName, as_attachment=True)
+                # read_bp_file_to("out/field_export.bp")
+                memory_file, download_name = zip_from_folder("out/field_export.bp")
+                return send_file(memory_file, download_name=download_name, as_attachment=True)
         except SyntaxError as e:
             return jsonify({
                 "success": False,
@@ -133,7 +136,6 @@ def evaluate_expression():
                     "success": False,
                     "error": error_output
                 })
-                
             
             return jsonify({
                 "success": True,

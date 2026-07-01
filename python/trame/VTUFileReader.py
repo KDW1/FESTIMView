@@ -45,7 +45,7 @@ class VTUFileReaderApp(TrameApp):
 # -----------------------------------------------------------------------------
     INTERVAL = 0.02
     def to_next_frame(self):
-        if self.field_option == "Solid": return
+        if self.state.field_option == "Solid": return
         if self.playing:
             return
         print("To next frame")
@@ -63,7 +63,7 @@ class VTUFileReaderApp(TrameApp):
         self.ctrl.view_update()
         
     async def play_animation(self):
-        if self.field_option == "Solid": return
+        if self.state.field_option == "Solid": return
         if not self.playing:
             self.playing = True
             for step in self.animationScene.TimeKeeper.TimestepValues:
@@ -74,7 +74,7 @@ class VTUFileReaderApp(TrameApp):
             self.playing = False
             
     async def reverse_animation(self):
-        if self.field_option == "Solid": return
+        if self.state.field_option == "Solid": return
         if not self.playing:
             self.playing = True
             for step in reversed(self.animationScene.TimeKeeper.TimestepValues):
@@ -86,7 +86,7 @@ class VTUFileReaderApp(TrameApp):
             self.playing = False
     
     def to_previous_frame(self):
-        if self.field_option == "Solid": return
+        if self.state.field_option == "Solid": return
         if self.playing:
             return
         print("To previous frame")
@@ -104,7 +104,7 @@ class VTUFileReaderApp(TrameApp):
         pass
     
     def to_last_frame(self):
-        if self.field_option == "Solid": return
+        if self.state.field_option == "Solid": return
         if self.playing:
             return
         print("To last frame")
@@ -118,7 +118,7 @@ class VTUFileReaderApp(TrameApp):
         pass
     
     def to_first_frame(self):
-        if self.field_option == "Solid": return
+        if self.state.field_option == "Solid": return
         if self.playing:
             return
         print("To last frame")
@@ -130,11 +130,10 @@ class VTUFileReaderApp(TrameApp):
         self.ctrl.view_update()
         print(f"(After) t={self.animationScene.AnimationTime}")
         pass
-
-    def load_data(self, **_kwargs):
-        # CLI
-        args, _ = self.server.cli.parse_known_args()
-        filepath = os.path.join(os.getcwd(), str(args.data))
+    
+    def read_vtk_from(self, fname):
+        print(f"Reading from {fname}")
+        filepath = os.path.join(os.getcwd(), fname)
         f = []
         for (dirpath, dirnames, filename) in os.walk(filepath):
             f.extend(filename)
@@ -150,6 +149,8 @@ class VTUFileReaderApp(TrameApp):
         
         self.state.field_option = "Solid"
         self.state.field_options = ("Solid", *self.fields)
+        self.state.dirty("field_option")
+        self.state.dirty("field_options")
         self.animationScene = simple.GetAnimationScene()
         self.animationScene.UpdateAnimationUsingDataTimeSteps()
         
@@ -161,6 +162,18 @@ class VTUFileReaderApp(TrameApp):
         self.view = simple.GetActiveView()
         self.view.MakeRenderWindowInteractor(True)
         simple.Render(self.view)
+    
+    def download_from(self, fname):
+        self.read_vtk_from(fname)
+        self.ctrl.view_update()
+            
+    def load_data(self, **_kwargs):
+        # CLI
+        args, _ = self.server.cli.parse_known_args()
+        if args.data:
+            self.read_vtk_from(str(args.data))
+        else:
+            self.view = simple.CreateRenderView()
 
         # HTML
         with SinglePageLayout(self.server) as self.ui:
@@ -169,7 +182,7 @@ class VTUFileReaderApp(TrameApp):
             with self.ui.toolbar:
                 v3.VBtn(
                     icon="mdi-step-backward-2",
-                    click=self.to_first_frame # <-- Use that reset_camera (init order does not matter)
+                    click=self.to_first_frame
                 )
                 v3.VBtn(
                     icon="mdi-step-backward",
@@ -177,25 +190,25 @@ class VTUFileReaderApp(TrameApp):
                 )
                 v3.VBtn(
                     icon="mdi-arrow-left",
-                    click=self.reverse_animation # <-- Use that reset_camera (init order does not matter)
+                    click=self.reverse_animation
                 )
                 v3.VBtn(
                     icon="mdi-play",
-                    click=self.play_animation # <-- Use that reset_camera (init order does not matter)
+                    click=self.play_animation
                 )
                 v3.VBtn(
                     icon="mdi-step-forward",
-                    click=self.to_next_frame # <-- Use that reset_camera (init order does not matter)
+                    click=self.to_next_frame
                 )
                 v3.VBtn(
                     icon="mdi-step-forward-2",
-                    click=self.to_last_frame # <-- Use that reset_camera (init order does not matter)
+                    click=self.to_last_frame 
                 )
                 v3.VSelect(
                     label="Choose an Option",
-                    v_model=("field_option", "Solid"), # Binds to state variable
-                    items=("field_options",),               # Binds to list of options
-                    variant="solo",                          # Vuetify styling prop
+                    v_model=("field_option", "Solid"),
+                    items=("field_options",),
+                    variant="solo",
                 )
                 
             with self.ui.content:
@@ -221,6 +234,7 @@ class VTUFileReaderApp(TrameApp):
 
     @change("field_option")
     def on_field_option_change(self, field_option, **_kwargs):
+        self.field_option = field_option
         self.representation= simple.Show(self.reader)
         simple.ColorBy(self.representation, ("POINTS", field_option))
         self.ctrl.view_update()

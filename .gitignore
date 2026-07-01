@@ -2,6 +2,7 @@
 
 /utils/example.json
 /python/trame/data/
+/python/__pycache__/
 
 # dependencies
 /node_modules
