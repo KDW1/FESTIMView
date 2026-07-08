@@ -85,7 +85,7 @@ def execute_code():
                 if error_output:
                     app.logger.info("Error output occurred...")
                     app.logger.info(error_output)
-                # read_bp_file_to("out/field_export.bp")
+                read_bp_file_to("out/field_export.bp", "vtk_temp/example")
                 memory_file, download_name = zip_from_folder("out/field_export.bp")
                 return send_file(memory_file, download_name=download_name, as_attachment=True)
         except SyntaxError as e:

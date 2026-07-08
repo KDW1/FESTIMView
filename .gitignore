@@ -19,7 +19,8 @@
 
 # next.js
 /.next/
-/out/
+/out
+/vtk_temp
 
 # production
 /build

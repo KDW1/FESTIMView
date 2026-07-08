@@ -97,12 +97,16 @@ def update_cone(resolution, **kwargs):
 
     cone_source.SetResolution(resolution)
     ctrl.view_update()
+    ctrl.child_post_message([{ "emit": 'child-to-parent', "value": "Hell0 there -from your child" }])
 
 
 
 @ctrl.trigger("reset_resolution")
 def reset_resolution():
     state.resolution = DEFAULT_RESOLUTION
+    
+def child_receive_msg(msg):
+    print("Received message: ", msg)
 
 
 # -----------------------------------------------------------------------------
@@ -113,6 +117,12 @@ with SinglePageLayout(server) as layout:
     ctrl.trigger("reset_camera")(ctrl.view_reset_camera)
     layout.title.set_text("Trame Iframe - Cone Application")
 
+    comm = iframe.Communicator(
+        event_names=["parent_to_child"],
+        parent_to_child=(child_receive_msg, "[$event]"),
+    )
+    ctrl.child_post_message = comm.post_message
+    
     with layout.toolbar:
         vuetify.VSpacer()
         vuetify.VSlider(

@@ -70,6 +70,7 @@ export default function Home() {
   }
 
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [postProcessingDone, setPostProcessingDone] = useState(true)
   const [mode, setMode] = useState<"window" | "festim">("festim")
   const [snippetOnly, setSnippetOnly] = useState<boolean>(true)
   const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim | null>(presetSimulations[0])
@@ -362,6 +363,7 @@ export default function Home() {
             status: "notification"
           }])
           setProcessingCode(false)
+          setPostProcessingDone(true)
           return downloadURL
         } catch (error) {
           updateArgs([{
@@ -417,7 +419,7 @@ export default function Home() {
         </div>
         <div className="w-1/3 flex flex-col gap-4">
           <div className="flex flex-1 h-4/5">
-            <TrameVisualizer processingCode={processingCode} sendPythonRequest={sendPythonRequest} mode={mode} currentIndex={currentIndex} setCurrentIndex={(index: number) => setCurrentIndex(index)} updateMode={(mode: "window" | "festim") => setMode(mode)} bindings={bindings} updateBindings={updateBindings} simulation={currentSimulation} />
+            <TrameVisualizer postProcessingDone={postProcessingDone} setPostProcessingDone={setPostProcessingDone} processingCode={processingCode} sendPythonRequest={sendPythonRequest} mode={mode} currentIndex={currentIndex} setCurrentIndex={(index: number) => setCurrentIndex(index)} updateMode={(mode: "window" | "festim") => setMode(mode)} bindings={bindings} updateBindings={updateBindings} simulation={currentSimulation} />
           </div>
           <PythonConsole args={args} />
         </div>

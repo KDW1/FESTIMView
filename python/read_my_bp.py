@@ -66,7 +66,7 @@ def read_bp_file_to(input_filepath, output_filepath_prefix):
             obj = dict()
             for key, value in info.items():
                 obj[key] = value
-                print("\t" + key + ": " + value, end=" ")
+                # print("\t" + key + ": " + value, end=" ")
             variable_information[name] = obj
         if DEBUGGING: print("Attribute Keys: ", attributes.keys())
         
@@ -92,6 +92,8 @@ def read_bp_file_to(input_filepath, output_filepath_prefix):
     
     count = 0
     
+    print(f"There are {len(timestamps)} times")
+    print([time for time, values in timestamps])
     for time, values in timestamps:
         points = vtk.vtkPoints()
         for point in values["geometry"]:
@@ -146,5 +148,6 @@ def read_bp_file_to(input_filepath, output_filepath_prefix):
 
 # 2. Execute code AFTER the stream is finished
 relevant_values, relevant_vars = read_bp_file_to("out/field_export.bp", "vtk_temp/example")
+
 # print("Relevant Values' Keys: ", relevant_values.keys())
 # print("Relevant Variables' Keys: ", relevant_vars)
