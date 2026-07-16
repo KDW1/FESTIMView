@@ -4,6 +4,10 @@ import { FESTIMSim } from "@/utils/simulations"
 import FESTIMCodePrompts from "./FESTIMCodePrompts";
 import { Binding } from "@/app/page";
 import { Play } from "next/font/google";
+import { parse } from "path";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faLastfmSquare } from "@fortawesome/free-brands-svg-icons";
+import { faBackward, faBackwardFast, faBackwardStep, faForwardFast, faForwardStep, faPlay } from "@fortawesome/free-solid-svg-icons";
 
 // Entire structre is copied from trame-react since legacy dependencies with
 // react-scripts, react-dom is preventing the package from functioning normally
@@ -161,12 +165,12 @@ export default function TrameVisualizer({
         <button className="button" onClick={loadData}>Load Data</button>
         {
           dataInitialized && <>
-        <button className="button" onClick={toFirstFrame}>First Frame</button>
-        <button className="button" onClick={toPreviousFrame}>Previous Frame</button>
-        <button className="button" onClick={(e) => playThroughFrames(e, -1)}>(Reverse) Play</button>
-        <button className="button" onClick={playThroughFrames}>Play</button>
-        <button className="button" onClick={toNextFrame}>Next Frame</button>
-        <button className="button" onClick={toLastFrame}>Last Frame</button></>
+        <button className="button font-thin" onClick={toFirstFrame}><FontAwesomeIcon icon={faBackwardFast}/></button>
+        <button className="button font-thin" onClick={toPreviousFrame}><FontAwesomeIcon icon={faBackwardStep}/></button>
+        <button className="button font-thin" onClick={(e) => playThroughFrames(e, -1)}><FontAwesomeIcon icon={faBackward}/></button>
+        <button className="button font-thin" onClick={playThroughFrames}><FontAwesomeIcon icon={faPlay}/></button>
+        <button className="button font-thin" onClick={toNextFrame}><FontAwesomeIcon icon={faForwardStep}/></button>
+        <button className="button font-thin" onClick={toLastFrame}><FontAwesomeIcon icon={faForwardFast}/></button></>
         }
         </div>
         { dataInitialized && 
@@ -180,8 +184,9 @@ export default function TrameVisualizer({
           </select>
          <p className="font-normal text-primary text-base">({currentTimeStep+1}/{MAX_STEP+1}), t = <span className="font-semibold">{(Math.round(100*((currentTimeStep)*0.05+0.05))/100).toPrecision(3)}</span> seconds</p> 
           <input onChange={(e)=>{
-            console.log(e.target)
-            setCurrentTimeStep(e.target.value)
+            let t = parseInt(e.target.value)
+            setCurrentTimeStep(t)
+            sendMessage({action: "toFrame", time: t})
             }} className="bg-gray-200 stroke-amber-200" type="range" min={0} value={currentTimeStep} max={MAX_STEP} step={1} name="" id="" />
         </div>}
         {/* <p className="font-semibold text-primary text-base">Resolution: <span className="font-normal">{resolution}</span></p> */}

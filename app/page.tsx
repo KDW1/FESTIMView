@@ -351,6 +351,7 @@ export default function Home() {
               status: "error"
             }])
           }
+          setProcessingCode(false)
           return
         }
 

@@ -62,13 +62,15 @@ def read_bp_file_to(input_filepath, output_filepath_prefix):
         attributes = s.available_attributes()
         
         for name, info in vars.items():
-            if DEBUGGING: print("\nvariable_name: " + name, end=" ")
+            print("\nvariable_name: " + name, end=" ")
             obj = dict()
             for key, value in info.items():
                 obj[key] = value
-                # print("\t" + key + ": " + value, end=" ")
+                print("\t" + key + ": " + value, end=" ")
+            print("\n\n")
             variable_information[name] = obj
-        if DEBUGGING: print("Attribute Keys: ", attributes.keys())
+        # if DEBUGGING: 
+        # print("Attribute Keys: ", attributes.keys())
         
         xml_root = attributes["vtk.xml"]
         if DEBUGGING: print(f"\nThe XML Root is\n", xml_root)
@@ -80,6 +82,8 @@ def read_bp_file_to(input_filepath, output_filepath_prefix):
             variables_dictionary = dict()
             for variable_of_interest in vars:
                 data_of_interest = s.read(variable_of_interest, step_selection=[step, 1])
+                # if step == 0 and variable_of_interest == "H_1":
+                    # print(f"Variable {variable_of_interest}: ", data_of_interest.tolist())
                 variables_dictionary[variable_of_interest] = data_of_interest.tolist()
                 
                 # print(f"Data of interest, {variable_of_interest}\n", data_of_interest.tolist())
@@ -104,6 +108,9 @@ def read_bp_file_to(input_filepath, output_filepath_prefix):
         add_cells_to_dataset(ugrid, values)
         add_relevant_point_data(ugrid, values)
         
+        # print(f"\n\nAt time, t = {time}")
+        # print(values["H_trapped_1"][:10])
+        
         time_array = vtk.vtkDoubleArray()
         time_array.SetName("TimeValue")
         time_array.SetNumberOfTuples(1)
@@ -115,33 +122,6 @@ def read_bp_file_to(input_filepath, output_filepath_prefix):
         
         write_down_ugrid(ugrid, output_filepath_prefix+str(count)+".vtu")
         count += 1
-        
-
-    # (Modified Function) from Adam Djellouli's https://github.com/djeada/Vtk-Examples/tree/main
-    
-    # XML format is differnet in that we need to have point data for each time step or something
-    # example: https://vtk.org/files/ExternalData/SHA512/2fa0dec5c2c558dc49b037f3f1a0e18966e4411ca389bba32990b9ce10c2dbfd406d98da867b3beb3151135c4e990a4c0229aef68ef4b1570bda4e856e7b13dd
-    
-    # def add_time_info_to(dataset):
-    #     # Based off of the process RequestInformation(...) from https://gitlab.kitware.com/vtk/vtk/-/blob/master/IO/ADIOS2/vtkADIOS2VTXReader.cxx?ref_type=heads
-    #     # Also from reading https://adios2.readthedocs.io/en/v2.12.1/ecosystem/visualization.html#saving-the-vtk-xml-data-model 
-    #     info = vtk.vtkInformationObject()
-        
-    #     if "step" in relevant_values and "step" in variable_information:
-    #         time_array = vtk.vtkFloatArray()
-    #         time_array.SetName("TIME")
-            
-    #         min, max = float(variable_information["step"]["Min"]), float(variable_information["step"]["Max"])
-    #         step = relevant_values["step"][0]
-            
-    #         for  i in range(int(min/step), int(max/step)+1, 1):
-    #             time_array.InsertNextValue(i*step)
-            
-    #         clean_list = vtk_to_numpy(time_array).tolist()
-    #         print("Time Array: ", clean_list)
-    #         print(len(clean_list))
-            
-    #         dataset.GetPointData().AddArray(time_array)
 
     return relevant_values, variable_information
     

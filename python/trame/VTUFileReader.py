@@ -1,8 +1,11 @@
-from trame.app import TrameApp, get_server
+from trame.app import TrameApp, get_server, asynchronous
 from trame.ui.vuetify3 import SinglePageLayout
 from trame.widgets import vuetify3 as v3
 from trame.widgets import paraview, client, iframe
 from trame.decorators import change
+from paraview.numpy_support import vtk_to_numpy
+import paraview.servermanager as sm
+
 
 from pathlib import Path
 
@@ -70,17 +73,22 @@ class VTUFileReaderApp(TrameApp):
 # -----------------------------------------------------------------------------
 # ParaView code
 # -----------------------------------------------------------------------------
-    INTERVAL = 0.2
+    INTERVAL = 0.05
     
     async def play_animation(self):
         if self.state.field_option == "Solid": return
-        if not self.playing:
-            self.playing = True
+        
+        async def loop():
             for step in self.animationScene.TimeKeeper.TimestepValues:
                 print(f"On step: {step}")
                 self.animationScene.AnimationTime = step
+                self.update_color_range()
                 self.ctrl.view_update()
                 await asyncio.sleep(self.INTERVAL)
+                
+        if not self.playing:
+            self.playing = True
+            await asynchronous.create_task(loop())
             self.playing = False
             
     async def reverse_animation(self):
@@ -90,6 +98,7 @@ class VTUFileReaderApp(TrameApp):
             for step in reversed(self.animationScene.TimeKeeper.TimestepValues):
                 print(f"On step: {step}")
                 self.animationScene.AnimationTime = step
+                self.update_color_range()
                 self.ctrl.view_update()
                 await asyncio.sleep(self.INTERVAL)
                 pass
@@ -100,6 +109,7 @@ class VTUFileReaderApp(TrameApp):
         steps = self.animationScene.TimeKeeper.TimestepValues
         step = steps[index]
         self.animationScene.AnimationTime = step
+        self.update_color_range()
         self.ctrl.view_update()
         
     def to_next_frame(self):
@@ -115,7 +125,7 @@ class VTUFileReaderApp(TrameApp):
         
         if new_time <= max_time:
             self.animationScene.AnimationTime = new_time
-            
+        self.update_color_range()
         print(f"(After) t={self.animationScene.AnimationTime}")
         self.ctrl.view_update()
        
@@ -132,7 +142,7 @@ class VTUFileReaderApp(TrameApp):
         
         if new_time >= min_time:
             self.animationScene.AnimationTime = new_time
-            
+        self.update_color_range()
         print(f"(After) t={self.animationScene.AnimationTime}")
         self.ctrl.view_update()
         pass
@@ -147,8 +157,9 @@ class VTUFileReaderApp(TrameApp):
         max_time, min_time = max(steps), min(steps)
             
         self.animationScene.AnimationTime = max_time
+        self.update_color_range()
+        self.ctrl.view_update()
         print(f"(After) t={self.animationScene.AnimationTime}")
-        pass
     
     def to_first_frame(self):
         if self.state.field_option == "Solid": return
@@ -160,6 +171,7 @@ class VTUFileReaderApp(TrameApp):
         max_time, min_time = max(steps), min(steps)
             
         self.animationScene.AnimationTime = min_time
+        self.update_color_range()
         self.ctrl.view_update()
         print(f"(After) t={self.animationScene.AnimationTime}")
         pass
@@ -175,13 +187,14 @@ class VTUFileReaderApp(TrameApp):
             # print(filename)
             out.append(filepath+f"/{filename}")
         # print("Filepaths: ", out)
-        self.reader  = simple.XMLUnstructuredGridReader(FileName=out)
+        self.reader = simple.XMLUnstructuredGridReader(FileName=out)
         print(self.reader.PointArrayStatus)
         self.fields = self.reader.PointArrayStatus
         # print("Associated fields: ", self.fields)
         
+        all_fields = ("Solid", *self.fields)
         self.state.field_option = "Solid"
-        self.state.field_options = ("Solid", *self.fields)
+        self.state.field_options = all_fields
         self.animationScene = simple.GetAnimationScene()
         self.animationScene.UpdateAnimationUsingDataTimeSteps()
         
@@ -189,6 +202,30 @@ class VTUFileReaderApp(TrameApp):
         print("Time Step Values: ", self.animationScene.TimeKeeper.TimestepValues)
         
         self.representation= simple.Show(self.reader)
+        
+        min, max = float("inf"), float("-inf")
+        def calculate_ranges():
+            calculated_ranges = dict()
+            print(all_fields)
+            for field_option in all_fields:
+                if field_option == "Solid":
+                    continue
+                for time in self.animationScene.TimeKeeper.TimestepValues:
+                    self.animationScene.AnimationTime = time
+                    ranges = self.reader.PointData[field_option].GetRange(-1)
+                    print(f"Time t={time}")
+                    print(f"Number of components is {self.reader.PointData[field_option].GetNumberOfComponents()}")
+                    print(f"Range for data is: {ranges[0]} to {ranges[1]}")
+                    if ranges[0] < min:
+                        min = ranges[0]
+                    if ranges[1] > max:
+                        max = ranges[1]
+                print("Field Option: ", field_option)
+                calculated_ranges[field_option] = (min, max)
+            
+            self.field_ranges = calculated_ranges
+            
+        # calculate_ranges()
         simple.ColorBy(self.representation, ("POINTS", "Solid"))
         self.view = simple.GetActiveView()
         self.view.MakeRenderWindowInteractor(True)
@@ -199,7 +236,17 @@ class VTUFileReaderApp(TrameApp):
         self.ctrl.view_update()
         print("I'm sending a message!")
         self.ctrl.child_post_message([{ "emit": 'child-to-parent', "value": "Hell0 there -from your child" }])
-            
+    
+    def update_color_range(self):
+        pass
+        # grid_data = sm.Fetch(self.reader)
+        # field_array = grid_data.GetPointData().GetArray(self.state.field_option)
+        # np_array = vtk_to_numpy(field_array)
+        # print(len(np_array))
+        # print(vtk_to_numpy(field_array))
+        # self.representation.RescaleTransferFunctionToDataRange(True, False)
+        # simple.UpdateScalarBars(self.view)
+        
     def load_data(self, **_kwargs):
         # CLI
         args, _ = self.server.cli.parse_known_args()
@@ -220,42 +267,43 @@ class VTUFileReaderApp(TrameApp):
             
             self.ui.icon.click = self.ctrl.view_reset_camera
             self.ui.title.set_text("Post Processing Page")
-            # with self.ui.toolbar:
-            #     v3.VBtn(
-            #         icon="mdi-download",
-            #         click=lambda:self.download_from("vtk_temp")
-            #     )
-            #     v3.VBtn(
-            #         icon="mdi-step-backward-2",
-            #         click=self.to_first_frame
-            #     )
-            #     v3.VBtn(
-            #         icon="mdi-step-backward",
-            #         click=self.to_previous_frame # <-- Use that reset_camera (init order does not matter)
-            #     )
-            #     v3.VBtn(
-            #         icon="mdi-arrow-left",
-            #         click=self.reverse_animation
-            #     )
-            #     v3.VBtn(
-            #         icon="mdi-play",
-            #         click=self.play_animation
-            #     )
-            #     v3.VBtn(
-            #         icon="mdi-step-forward",
-            #         click=self.to_next_frame
-            #     )
-            #     v3.VBtn(
-            #         icon="mdi-step-forward-2",
-            #         click=self.to_last_frame 
-            #     )
-            #     v3.VSelect(
-            #         label="Choose an Option",
-            #         v_model=("field_option", "Solid"),
-            #         items=("field_options",),
-            #         variant="solo",
-            #     )
-                
+            if __name__ == "__main__":
+                with self.ui.toolbar:
+                    v3.VBtn(
+                        icon="mdi-download",
+                        click=lambda:self.download_from("vtk_temp")
+                    )
+                    v3.VBtn(
+                        icon="mdi-step-backward-2",
+                        click=self.to_first_frame
+                    )
+                    v3.VBtn(
+                        icon="mdi-step-backward",
+                        click=self.to_previous_frame # <-- Use that reset_camera (init order does not matter)
+                    )
+                    v3.VBtn(
+                        icon="mdi-arrow-left",
+                        click=self.reverse_animation
+                    )
+                    v3.VBtn(
+                        icon="mdi-play",
+                        click=self.play_animation
+                    )
+                    v3.VBtn(
+                        icon="mdi-step-forward",
+                        click=self.to_next_frame
+                    )
+                    v3.VBtn(
+                        icon="mdi-step-forward-2",
+                        click=self.to_last_frame 
+                    )
+                    v3.VSelect(
+                        label="Choose an Option",
+                        v_model=("field_option", "Solid"),
+                        items=("field_options",),
+                        variant="solo",
+                    )
+                    
             with self.ui.content:
                 with v3.VContainer(fluid=True, classes="pa-0 fill-height"):
                     html_view = paraview.VtkRemoteView(self.view)
@@ -279,17 +327,27 @@ class VTUFileReaderApp(TrameApp):
                     
     @change("field_options")
     def on_field_options_change(self, field_options, **_kwargs):
-        print("Available optinos are now: ", field_options)
+        print("Available options are now: ", field_options)
         
     @change("field_option")
     def on_field_option_change(self, field_option, **_kwargs):
+        old_field = self.state.field_option
+        # old_transfer_function = simple.GetColorTransferFunction(self.state.field_option)
         self.state.field_option = field_option
         if self.reader: 
             self.representation = simple.Show(self.reader)
             simple.ColorBy(self.representation, ("POINTS", field_option))
+            if field_option != "Solid":
+                # Custom Range Generation
+                # transfer_function = simple.GetColorTransferFunction(field_option)
+                # transfer_function.RescaleTransferFunction(self.field_ranges[field_option][0], self.field_ranges[field_option][1])
+                
+                self.representation.SetScalarBarVisibility(self.view, True)
+                
+                simple.UpdateScalarBars(self.view)
         if self.ctrl.view_update:
             self.ctrl.view_update()
-        print("Switching field option to ", field_option)
+        print(f"Switching field option to {field_option}")
 # -----------------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------------
