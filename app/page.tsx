@@ -18,7 +18,9 @@ export type Binding = {
   values: {
     [key: string]: any
   },
-  recipe?: string
+  recipe?: string,
+  exporting?: boolean,
+  exportAddress?: string
 }
 
 const DEBUGGING_PARSER = false
@@ -64,11 +66,14 @@ export default function Home() {
         title: step.title,
         snippet: "",
         values,
-        recipe: step.recipe ?? ""
+        recipe: step.recipe ?? "",
+        exporting: step.exporting ?? false,
+        exportAddress: step.exportAddress ?? null
       })
     }
   }
 
+  const [postProcessingFilepath, setPostProcessingFilepath] = useState([""])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [postProcessingDone, setPostProcessingDone] = useState(true)
   const [mode, setMode] = useState<"window" | "festim">("festim")
@@ -257,10 +262,33 @@ export default function Home() {
     }
   }
 
+  const identifyExportPath = () => {
+    let relevant_filepath = null
+    for(let binding of bindings) {
+    if(binding.exporting && binding.exportAddress) {
+      let exportAddress = binding.exportAddress
+      if(exportAddress && exportAddress.includes("$")) {
+        let [list, address] = exportAddress.split("$")
+        let filepaths = []
+        for(let obj of binding.values[list]) {
+          filepaths.unshift(obj[address])
+        }
+        // TODO: THIS SYSTEM BREAKS DOWN IF THERE ARE MULTIPLE EXPORT ADDRESSES, IDK WHAT TO DO THEN
+        relevant_filepath = filepaths[0]
+        console.log("Post processing filepath(s) are: ", filepaths)
+      } else {
+        relevant_filepath = binding.values[exportAddress]
+        console.log("Post processing filepath is: ", relevant_filepath)
+      }
+    }
+    }
+    setPostProcessingFilepath(relevant_filepath)
+    return relevant_filepath
+  }
+
   const updateBindings = (binding: string, value: any) => {
     let indexedBinding = bindings[currentIndex]
     indexedBinding.values[binding] = value
-
     if (indexedBinding.recipe) {
       updateCodeWithIndexedBinding(indexedBinding, snippetOnly)
     }
@@ -268,11 +296,13 @@ export default function Home() {
     let updatedBindings = [...bindings]
     updatedBindings[currentIndex] = indexedBinding
     setBindings(updatedBindings)
+    console.log("Updated Bindings: ", updatedBindings)
   }
 
 
   // Python Code Evaluation
   const sendPythonRequest = async (code?: string, postprocessing?: boolean) => {
+    let filepath = null
     if (!code) code = pythonCode
     setProcessingCode(true)
     if (!postprocessing) {
@@ -285,14 +315,17 @@ export default function Home() {
         message: "Preparing export file...",
         status: "notification"
       }])
+      filepath = identifyExportPath()
     }
+    
     let apiURL = evaluatingCode ? "/api/eval" : "/api/exec"
     try {
       let res = await fetch(apiURL, {
         method: "POST",
         body: JSON.stringify({
           code,
-          postprocessing
+          postprocessing,
+          filepath
         }),
         headers: {
           "Content-Type": "application/json"
@@ -420,7 +453,7 @@ export default function Home() {
         </div>
         <div className="w-1/3 flex flex-col gap-4">
           <div className="flex flex-1 h-4/5">
-            <TrameVisualizer postProcessingDone={postProcessingDone} setPostProcessingDone={setPostProcessingDone} processingCode={processingCode} sendPythonRequest={sendPythonRequest} mode={mode} currentIndex={currentIndex} setCurrentIndex={(index: number) => setCurrentIndex(index)} updateMode={(mode: "window" | "festim") => setMode(mode)} bindings={bindings} updateBindings={updateBindings} simulation={currentSimulation} />
+            <TrameVisualizer identifyExportPath={identifyExportPath} postProcessingFilepath={postProcessingFilepath} postProcessingDone={postProcessingDone} setPostProcessingDone={setPostProcessingDone} processingCode={processingCode} sendPythonRequest={sendPythonRequest} mode={mode} currentIndex={currentIndex} setCurrentIndex={(index: number) => setCurrentIndex(index)} updateMode={(mode: "window" | "festim") => setMode(mode)} bindings={bindings} updateBindings={updateBindings} simulation={currentSimulation} />
           </div>
           <PythonConsole args={args} />
         </div>

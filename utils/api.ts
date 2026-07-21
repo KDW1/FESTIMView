@@ -9,9 +9,9 @@ class Backend {
         this.backendDomain = process.env.BACKEND_DOMAIN as string
     }
 
-    async sendPostProcessingRequest(code : string, postprocessing : boolean) {
+    async sendPostProcessingRequest(code : string, postprocessing : boolean, filepath : string | null = null) {
         console.log("Sending post processing request to execution...")
-        const data = await this.sendRequest("/exec", "POST", { code, postprocessing })
+        const data = await this.sendRequest("/exec", "POST", { code, postprocessing, filepath })
         if (!data.error) {
             return data
         } else {
@@ -111,9 +111,9 @@ const sendEvalRequest = async (code: string) => {
     return data
 }
 
-const sendPostProcessingRequest = async(code : string, postprocessing : boolean) => {
+const sendPostProcessingRequest = async(code : string, postprocessing : boolean, filepath : string | null = null) => {
     const backend = await getBackend()
-    const data = await backend.sendPostProcessingRequest(code, postprocessing)
+    const data = await backend.sendPostProcessingRequest(code, postprocessing, filepath)
     return data
 }
 

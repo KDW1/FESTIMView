@@ -19,6 +19,8 @@ export type FESTIMStep = {
   description?: string;
   settings: FESTIMSetting[];
   recipe?: string; // Recipe for assembling Python code
+  exporting?: boolean;
+  exportAddress?: string; // Where the filepath for the exported item can be found
 }
 
 // FESTIM simulation, composed of multiple steps
@@ -26,7 +28,7 @@ export type FESTIMSim = {
   title: string;
   steps: FESTIMStep[];
   preCode?: string;
-  postCode?:string
+  postCode?: string
 
 }
 
@@ -322,7 +324,7 @@ export const customClasses: ClassDictionary = {
       description: "the reactants (comma-separated values)",
       type: "string",
       name: "reactants"
-    }, 
+    },
     {
       title: "Product",
       description: "the product",
@@ -415,7 +417,7 @@ export const customClasses: ClassDictionary = {
   ]
 }
 
-const exampleStep : FESTIMStep = {
+const exampleStep: FESTIMStep = {
   title: "Python Recipe Example",
   description: "Simple demonstration of how the Python recipe works",
   settings: [
@@ -439,8 +441,8 @@ const exampleStep : FESTIMStep = {
       list: true
     }
   ],
-  recipe: 
-`favorite_movie="{*favorite_movie*}"
+  recipe:
+    `favorite_movie="{*favorite_movie*}"
 person={
   "name": "{*person.name*}",
   "age": {*person.age*},
@@ -583,7 +585,7 @@ const domainsStep: FESTIMStep = {
     {
       title: "Volume Subdomains",
       type: "volume",
-      name:"volumes",
+      name: "volumes",
       itemName: "volume",
       list: true
     },
@@ -630,8 +632,8 @@ const speciesStep: FESTIMStep = {
       list: true
     }
   ],
-  recipe: 
-  `# 5a. Create species
+  recipe:
+    `# 5a. Create species
 $specieses--{*species.variable*} = F.Species(name="{*species.name*}", mobile={*species.mobile*})
 {*species.variable*}.subdomains = [{*species.subdomains*}]
 $
@@ -795,8 +797,8 @@ const exportsStep: FESTIMStep = {
       list: true
     },
   ],
-  recipe: 
-  `# 10. Exports
+  recipe:
+    `# 10. Exports
 $vtx_exports--{*vtx_export.variable*} = F.VTXSpeciesExport(
   filename=f"{*vtx_export.filename*}",
   field={*vtx_export.field_expression*},
@@ -817,7 +819,9 @@ $volume_quantities--{*volume_quantity.variable*} = F.{*volume_quantity.quantity_
 {*derived_export_list_variable*} = [$surface_quantities--{*surface_quantity.variable*}, $$volume_quantities--{*volume_quantity.variable*}, $]
   
 @problem--{*problem_variable*}@.exports = {*field_export_list_variable*} + {*derived_export_list_variable*}
-`
+`,
+  exportAddress: "vtx_exports$vtx_export.filename",
+  exporting: true
 }
 
 const runStep: FESTIMStep = {
@@ -836,7 +840,7 @@ const runStep: FESTIMStep = {
 `
 }
 
-export const exampleSimulation : FESTIMSim = {
+export const exampleSimulation: FESTIMSim = {
   title: "Example Simulation",
   steps: [
     exampleStep

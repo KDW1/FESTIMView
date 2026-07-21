@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import io
 import sys
 from contextlib import redirect_stdout, redirect_stderr
-from read_my_bp import read_bp_file_to
+# from read_my_bp import read_bp_file_to
 
 load_dotenv()
 
@@ -33,6 +33,7 @@ def zip_from_folder(folder_name):
     return memory_file, download_name
 
 app = Flask(__name__)
+DEFAULT_FILE_PATH = "out/field_export.bp"
 
 @app.route("/")
 def index():
@@ -85,8 +86,12 @@ def execute_code():
                 if error_output:
                     app.logger.info("Error output occurred...")
                     app.logger.info(error_output)
-                read_bp_file_to("out/field_export.bp", "vtk_temp/example")
-                memory_file, download_name = zip_from_folder("out/field_export.bp")
+                # read_bp_file_to("out/field_export.bp", "vtk_temp/example")
+                
+                ## Read specific filename!
+                filepath = data.get("filepath", DEFAULT_FILE_PATH)
+                app.logger.info("Our filepath argument was: ", filepath)
+                memory_file, download_name = zip_from_folder(filepath)
                 return send_file(memory_file, download_name=download_name, as_attachment=True)
         except SyntaxError as e:
             return jsonify({

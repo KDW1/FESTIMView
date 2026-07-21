@@ -7,9 +7,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { code, postprocessing } = await req.json()
+  const { code, postprocessing, filepath } = await req.json()
   if (postprocessing) {
-    let zipFileRes = await sendPostProcessingRequest(code, postprocessing)
+    let zipFileRes = await sendPostProcessingRequest(code, postprocessing, filepath)
     let contentType = zipFileRes.headers.get("Content-Type")
     console.log("Content-Type: ", contentType)
     if (contentType == "application/json") {
