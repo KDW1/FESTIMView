@@ -5,6 +5,7 @@
 /python/__pycache__/
 
 # dependencies
+/paraview
 /node_modules
 /.pnp
 .pnp.*
