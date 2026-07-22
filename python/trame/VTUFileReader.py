@@ -204,7 +204,6 @@ class VTUFileReaderApp(TrameApp):
             comm = iframe.Communicator(
                 event_names=["parent_to_child"],
                 parent_to_child=(self.child_receive_msg, "[$event]"),
-                target_origin="http://localhost:3000", enable_rpc=True
             )
             self.ctrl.child_post_message = comm.post_message
             

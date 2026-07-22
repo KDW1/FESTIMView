@@ -1,5 +1,7 @@
 import { Binding } from "@/app/page";
 import { FESTIMSetting, FESTIMSim, customClasses } from "@/utils/simulations"
+import { faDownload, faEraser, faFile, faSave } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { ChangeEvent, JSX, JSXElementConstructor, useEffect, useRef, useState } from "react"
 
 type FESTIMCodePromptsProps = {
@@ -320,7 +322,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, sendPyth
                 }
             </form>
             <p className={`text-sm text-rose-600 transition-all duration-300 ease-in-out ${showAlert ? "opacity-100" : "opacity-0"}`}>{alerts.map((alert, i) => <span key={`span${i}`}>{alert} <br /></span>)}</p>
-            <div className="flex flex-col mt-auto space-y-2">
+            <div className="flex flex-row mt-auto space-x-2">
                 <button onClick={(e) => {
                     e.target.disabled = true
                     localStorage.setItem("bindings", JSON.stringify(bindings.map((b) => {
@@ -329,15 +331,41 @@ export default function FESTIMCodePrompts({ simulation, processingCode, sendPyth
                     setTimeout(() => {
                         e.target.disabled = false
                     }, 750)
-                }} className="button mt-auto">
-                    Save Settings
+                }} className="button mt-auto group tooltip-container">
+                    <span className="tooltip">Save Settings</span>
+                    <FontAwesomeIcon className="h-4" icon={faSave}></FontAwesomeIcon>
                 </button>
                 <button onClick={(e) => {
                     e.target.disabled = true
                     localStorage.removeItem("bindings")
                     setTimeout(() => (e.target.disabled = false), 750)
-                }} className="button mt-auto">
-                    Reset Settings
+                }} className="button mt-auto group tooltip-container">
+                    <span className="tooltip">Reset Settings</span>
+                    <FontAwesomeIcon className="h-4" icon={faEraser}></FontAwesomeIcon>
+                </button>
+                <button onClick={(e) => {
+                    e.target.disabled = true
+                    localStorage.setItem("bindings", JSON.stringify(bindings.map((b) => {
+                        return { values: b.values }
+                    })))
+                    setTimeout(() => {
+                        e.target.disabled = false
+                    }, 750)
+                }} className="button mt-auto group tooltip-container">
+                    <span className="tooltip">Upload Settings from .JSON</span>
+                    <FontAwesomeIcon className="h-4" icon={faDownload}></FontAwesomeIcon>
+                </button>
+                <button onClick={(e) => {
+                    e.target.disabled = true
+                    localStorage.setItem("bindings", JSON.stringify(bindings.map((b) => {
+                        return { values: b.values }
+                    })))
+                    setTimeout(() => {
+                        e.target.disabled = false
+                    }, 750)
+                }} className="button mt-auto group tooltip-container">
+                    <span className="tooltip">Save Settings as .JSON</span>
+                    <FontAwesomeIcon className="h-4" icon={faFile}></FontAwesomeIcon>
                 </button>
                 <div className="flex gap-2 h-min overflow-x-auto mt-auto">
                     {

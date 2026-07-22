@@ -53,3 +53,11 @@ body {
 .button {
   @apply px-2 py-1 text-nowrap flex-nowrap cursor-pointer disabled:bg-gray-300 hover:bg-primarybg duration-300 ease-in-out transition bg-lightbg rounded-md
 }
+
+.tooltip-container {
+  @apply relative
+}
+
+.tooltip {
+  @apply bg-gray-200 text-sm duration-300 mx-auto absolute group-hover:opacity-100 opacity-0 -top-8 rounded px-2 text-primary
+}

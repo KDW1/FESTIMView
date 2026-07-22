@@ -162,6 +162,7 @@ export default function TrameVisualizer({
             <button key={`option${tab}`} onClick={(e) => {
               e.preventDefault()
               setCurrentTab(tab.toLowerCase())
+              if(tab == "Window") loadData()
               updateMode(tab.toLowerCase())
             }} disabled={tab.toLowerCase() == "window" && !postProcessingDone} className={`cursor-pointer disabled:bg-gray-300 ease-in-out duration-300 transition ${tab.toLowerCase() == currentTab ? "bg-primarybg" : "bg-lightbg"} px-2 py-1 rounded-md`}>{tab == "Window" ? "Post Processing Window" : "FESTIM"}</button>
           )
@@ -169,37 +170,6 @@ export default function TrameVisualizer({
         }
       </div>
       <div className={`flex-col flex flex-1 ${currentTab == "window" ? "" : "hidden h-0"}`}>
-        <div className="flex flex-wrap gap-2 pb-4 my-2">
-          {!dataInitialized && <button className="button" onClick={loadData}>Load Data</button>}
-          {
-            dataInitialized && <div className="w-full">
-              <div className="flex gap-x-2 mb-1">
-                <button className="button font-thin h-min" onClick={toFirstFrame}><FontAwesomeIcon icon={faBackwardFast} /></button>
-                <button className="button font-thin h-min" onClick={toPreviousFrame}><FontAwesomeIcon icon={faBackwardStep} /></button>
-                <button className="button font-thin h-min" onClick={(e) => playThroughFrames(e, -1)}><FontAwesomeIcon icon={faBackward} /></button>
-                <button className="button font-thin h-min" onClick={playThroughFrames}><FontAwesomeIcon icon={faPlay} /></button>
-                <button className="button font-thin h-min" onClick={toNextFrame}><FontAwesomeIcon icon={faForwardStep} /></button>
-                <button className="button font-thin h-min" onClick={toLastFrame}><FontAwesomeIcon icon={faForwardFast} /></button>
-
-              </div><div className="flex flex-col text-sm gap-y-1 font-semibold text-primary">
-                <p>Field Options: </p>
-                <select value={field} onChange={switchFieldOption} name="" id="" className="select-container">
-                  <option defaultValue={true}>Select a Value</option>
-                  <option value="H_1">H_1</option>
-                  <option value="H_trapped_1">H_trapped_1</option>
-                  <option value="empty_trap_1">empty_trap_1</option>
-                </select>
-                <p className="font-normal text-primary text-base">({currentTimeStep + 1}/{MAX_STEP + 1}), t = <span className="font-semibold">{(Math.round(100 * ((currentTimeStep) * 0.05 + 0.05)) / 100).toPrecision(3)}</span> seconds</p>
-                <input onChange={(e) => {
-                  let t = parseInt(e.target.value)
-                  setCurrentTimeStep(t)
-                  sendMessage({ action: "toFrame", time: t })
-                }} className="bg-gray-200 stroke-amber-200" type="range" min={0} value={currentTimeStep} max={MAX_STEP} step={1} name="" id="" />
-              </div>
-            </div>
-          }
-        </div>
-        {/* <p className="font-semibold text-primary text-base">Resolution: <span className="font-normal">{resolution}</span></p> */}
         <iframe id={iframe_id} className="h-full w-full" sandbox="allow-scripts allow-same-origin" />
       </div>
       {

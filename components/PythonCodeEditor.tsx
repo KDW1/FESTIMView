@@ -30,6 +30,9 @@ export default function PythonCodeEditor({ pythonCode, evaluatingCode, processin
     const [backgroundColor, setBackgroundColor] = useState("#fff")
     const [copyingCode, setCopyingCode] = useState(false)
 
+    const FAVORITE_DEV_THEME = "Amy"
+    const IN_DEVELOPMENT = !process.env.PRODUCTION
+
     // Key Handling for the Python Code Editor
     const handleKeyDown = (e: KeyboardEvent) => {
         if (e.ctrlKey) {
@@ -58,18 +61,12 @@ export default function PythonCodeEditor({ pythonCode, evaluatingCode, processin
         }
     }, [sendPythonRequest])
 
-    // Monaco Editor Setup
-    useEffect(() => {
-
-        if (monaco) {
-            setTheme(monaco, themeName)
-        }
-    }, [themeName]);
 
     const setTheme = (monaco : any, themeName : string,) => {
         
             if (themeName != "vs-light" && themeName != "vs-dark") {
                 let theme = themes[themeName]
+                console.log(theme)
                 monaco.editor.defineTheme(themeName.replaceAll(/\s+/g, ""), theme)
                 monaco.editor.setTheme(themeName.replaceAll(/\s+/g, ""))
                 let themeBackgroundColor = theme.colors["editor.background"]
@@ -81,12 +78,25 @@ export default function PythonCodeEditor({ pythonCode, evaluatingCode, processin
             }
     }
 
+    useEffect(() => {
+
+        if (monaco) {
+            setTheme(monaco, themeName)
+        }
+    }, [themeName]);
+
+    useEffect(()=>{
+        if(monaco && FAVORITE_DEV_THEME && IN_DEVELOPMENT) {
+            setTheme(monaco, FAVORITE_DEV_THEME)
+            setThemeName(FAVORITE_DEV_THEME)
+        }
+    }, [monaco])
     return (
         <div className="w-full flex flex-1 container">
             <p className="font-semibold text-primary">Python Code Editor.
                 <br />
             </p>
-            <select onChange={(e) => setThemeName(e.target.value)} className="select-container" name="" id="">
+            <select value={themeName} onChange={(e) => setThemeName(e.target.value)} className="select-container" name="" id="">
                 <option className="border-blue-400 border-2" value="vs-light">VS Light</option>
                 <option className="border-blue-400 border-2" value="vs-dark">VS Dark</option>
                 {themeKeys.map((theme) => (
