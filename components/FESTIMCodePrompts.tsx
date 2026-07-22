@@ -1,5 +1,5 @@
 import { Binding } from "@/app/page";
-import { FESTIMSetting, FESTIMSim, customClasses } from "@/utils/simulations"
+import { FESTIMSetting, FESTIMSim, customClasses, populateBindings } from "@/utils/simulations"
 import { faDownload, faEraser, faFile, faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { ChangeEvent, JSX, JSXElementConstructor, useEffect, useRef, useState } from "react"
@@ -338,31 +338,47 @@ export default function FESTIMCodePrompts({ simulation, processingCode, sendPyth
                 <button onClick={(e) => {
                     e.target.disabled = true
                     localStorage.removeItem("bindings")
+                    updateBindings("*", populateBindings(simulation, {}, true))
                     setTimeout(() => (e.target.disabled = false), 750)
                 }} className="button mt-auto group tooltip-container">
-                    <span className="tooltip">Reset Settings</span>
+                    <span className="tooltip">Reset Settings and Clear Save</span>
                     <FontAwesomeIcon className="h-4" icon={faEraser}></FontAwesomeIcon>
                 </button>
                 <button onClick={(e) => {
                     e.target.disabled = true
-                    localStorage.setItem("bindings", JSON.stringify(bindings.map((b) => {
-                        return { values: b.values }
-                    })))
-                    setTimeout(() => {
-                        e.target.disabled = false
-                    }, 750)
+                    let fileUploadInput = document.createElement("input")
+                    fileUploadInput.type = "file"
+                    fileUploadInput.accept = ".json"
+                    fileUploadInput.click()
+                    fileUploadInput.addEventListener("change", (e) => {
+                        console.log(e.target.files)
+                        let file = e.target.files[0]
+                        if(file) {
+                            const reader = new FileReader()
+                            reader.onload = () => {
+                                let jsonContent = reader.result
+                                let bindings = populateBindings(simulation, JSON.parse(jsonContent))
+                                updateBindings("*", bindings)
+                            }
+                            reader.readAsText(file)
+                        }
+                    })
+                    e.target.disabled = false
                 }} className="button mt-auto group tooltip-container">
                     <span className="tooltip">Upload Settings from .JSON</span>
                     <FontAwesomeIcon className="h-4" icon={faDownload}></FontAwesomeIcon>
                 </button>
                 <button onClick={(e) => {
                     e.target.disabled = true
-                    localStorage.setItem("bindings", JSON.stringify(bindings.map((b) => {
+                    let a = document.createElement("a")
+                    let link = new Blob([JSON.stringify(bindings.map((b) => {
                         return { values: b.values }
-                    })))
-                    setTimeout(() => {
-                        e.target.disabled = false
-                    }, 750)
+                    }))], { type: "application/json" })
+                    a.href = URL.createObjectURL(link)
+                    let date = new Date()
+                    a.download = `${simulation.title.replaceAll(" ", "_").toLocaleLowerCase()}_settings_${date.toLocaleDateString()}`
+                    a.click()
+                    e.target.disabled = false
                 }} className="button mt-auto group tooltip-container">
                     <span className="tooltip">Save Settings as .JSON</span>
                     <FontAwesomeIcon className="h-4" icon={faFile}></FontAwesomeIcon>

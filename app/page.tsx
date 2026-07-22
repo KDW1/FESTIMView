@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import TrameVisualizer from "@/components/TrameVisualizer";
-import { customClasses, exampleSimulation, FESTIMSetting, FESTIMSim, FESTIMStep, presetSimulations } from "@/utils/simulations";
+import { customClasses, exampleSimulation, FESTIMSetting, FESTIMSim, FESTIMStep, populateBindings, presetSimulations } from "@/utils/simulations";
+import { initialize } from "next/dist/server/lib/render-server";
 
 // TODO: Need to develop some full fledged context for the Python Code Editor in order to avoid prop drilling
 
@@ -45,33 +46,8 @@ export default function Home() {
     }
     localStorageBindings = objects
   }
-  if (defaultSimulation) {
-    for (let i = 0; i < defaultSimulation.steps.length; i++) {
-      let step: FESTIMStep = defaultSimulation.steps[i]
-      let values: { [key: string]: any } = {}
-      let storedBinding = localStorageBindings[i]
-      // We initialize the values
-      for (let setting of step.settings) {
-        let binding = setting.name ?? setting.title
-        if (setting.defaultValue || (storedBinding && binding in storedBinding.values)) {
-          values[binding] = setting.defaultValue ?? storedBinding.values[binding]
-        } else {
-          values[binding] = setting.list ? [{}] : ""
-        }
-      }
 
-      initializedBindings.push({
-        index: i,
-        name: step.name,
-        title: step.title,
-        snippet: "",
-        values,
-        recipe: step.recipe ?? "",
-        exporting: step.exporting ?? false,
-        exportAddress: step.exportAddress ?? null
-      })
-    }
-  }
+  initializedBindings = populateBindings(defaultSimulation, localStorageBindings)
 
   const [postProcessingFilepath, setPostProcessingFilepath] = useState([""])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -288,6 +264,15 @@ export default function Home() {
 
   const updateBindings = (binding: string, value: any) => {
     let indexedBinding = bindings[currentIndex]
+    if(binding == "*") {
+      // Wildcard triggers rewriting the entire bindings system
+      setBindings(value)
+      indexedBinding.values = value[currentIndex].values
+      if (indexedBinding.recipe) {
+        updateCodeWithIndexedBinding(indexedBinding, snippetOnly)
+      }
+      return
+    }
     indexedBinding.values[binding] = value
     if (indexedBinding.recipe) {
       updateCodeWithIndexedBinding(indexedBinding, snippetOnly)

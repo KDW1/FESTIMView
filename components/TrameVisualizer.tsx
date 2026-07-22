@@ -63,10 +63,6 @@ export default function TrameVisualizer({
   }
 
   useEffect(() => {
-    var receiveMessage = function (e: any) {
-      console.log("Recieved event " + JSON.stringify(event));
-    }
-    window.addEventListener("message", receiveMessage, true);
     console.log("Mounting trame visualizer component....")
     let iframe = document.getElementById(iframe_id);
 

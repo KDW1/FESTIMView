@@ -883,3 +883,35 @@ if F.__version__ != "2.0b2.post2":
     ]
   }
 ]
+
+
+export const populateBindings: Function = (simulation: FESTIMSim, storedBindings : object[], empty : boolean = false) => {
+  let bindings = []
+  for (let i = 0; i < simulation.steps.length; i++) {
+    let step: FESTIMStep = simulation.steps[i]
+    let values: { [key: string]: any } = {}
+    if(!empty) {
+      let storedBinding = storedBindings[i]
+      // We initialize the values
+      for (let setting of step.settings) {
+        let binding = setting.name ?? setting.title
+        if (setting.defaultValue || (storedBinding && binding in storedBinding.values)) {
+          values[binding] = setting.defaultValue ?? storedBinding.values[binding]
+        } else {
+          values[binding] = setting.list ? [{}] : ""
+        }
+      }
+    }
+    bindings.push({
+      index: i,
+      name: step.name,
+      title: step.title,
+      snippet: "",
+      values,
+      recipe: step.recipe ?? "",
+      exporting: step.exporting ?? false,
+      exportAddress: step.exportAddress ?? null
+    })
+  }
+  return bindings
+}
