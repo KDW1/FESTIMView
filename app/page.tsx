@@ -452,7 +452,7 @@ export default function Home() {
           }} mode={mode} pythonCode={pythonCode} updatePythonCode={updatePythonCode} args={args} updateArgs={updateArgs} />
         </div>
         <div className="w-1/3 flex flex-col gap-4">
-          <div className="flex flex-1 h-4/5">
+          <div className="flex flex-1 h-5/6">
             <TrameVisualizer identifyExportPath={identifyExportPath} postProcessingFilepath={postProcessingFilepath} postProcessingDone={postProcessingDone} setPostProcessingDone={setPostProcessingDone} processingCode={processingCode} sendPythonRequest={sendPythonRequest} mode={mode} currentIndex={currentIndex} setCurrentIndex={(index: number) => setCurrentIndex(index)} updateMode={(mode: "window" | "festim") => setMode(mode)} bindings={bindings} updateBindings={updateBindings} simulation={currentSimulation} />
           </div>
           <PythonConsole args={args} />

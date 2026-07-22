@@ -30,7 +30,7 @@ type VisualizerProps = {
 };
 
 const iframe_id = "my_frame"
-const iframe_url = "http://localhost:8080"
+const iframe_url = "http://localhost:5000/iframe"
 
 export default function TrameVisualizer({
   onCommunicatorReady, identifyExportPath, postProcessingFilepath, postProcessingDone, setPostProcessingDone, processingCode, simulation, sendPythonRequest, updateBindings, bindings, mode, updateMode, currentIndex, setCurrentIndex
@@ -63,6 +63,10 @@ export default function TrameVisualizer({
   }
 
   useEffect(() => {
+    var receiveMessage = function (e: any) {
+      console.log("Recieved event " + JSON.stringify(event));
+    }
+    window.addEventListener("message", receiveMessage, true);
     console.log("Mounting trame visualizer component....")
     let iframe = document.getElementById(iframe_id);
 
@@ -169,15 +173,15 @@ export default function TrameVisualizer({
           {!dataInitialized && <button className="button" onClick={loadData}>Load Data</button>}
           {
             dataInitialized && <div className="w-full">
-            <div className="flex gap-x-2 mb-1">
-              <button className="button font-thin h-min" onClick={toFirstFrame}><FontAwesomeIcon icon={faBackwardFast} /></button>
-              <button className="button font-thin h-min" onClick={toPreviousFrame}><FontAwesomeIcon icon={faBackwardStep} /></button>
-              <button className="button font-thin h-min" onClick={(e) => playThroughFrames(e, -1)}><FontAwesomeIcon icon={faBackward} /></button>
-              <button className="button font-thin h-min" onClick={playThroughFrames}><FontAwesomeIcon icon={faPlay} /></button>
-              <button className="button font-thin h-min" onClick={toNextFrame}><FontAwesomeIcon icon={faForwardStep} /></button>
-              <button className="button font-thin h-min" onClick={toLastFrame}><FontAwesomeIcon icon={faForwardFast} /></button>
-              
-            </div><div className="flex flex-col text-sm gap-y-1 font-semibold text-primary">
+              <div className="flex gap-x-2 mb-1">
+                <button className="button font-thin h-min" onClick={toFirstFrame}><FontAwesomeIcon icon={faBackwardFast} /></button>
+                <button className="button font-thin h-min" onClick={toPreviousFrame}><FontAwesomeIcon icon={faBackwardStep} /></button>
+                <button className="button font-thin h-min" onClick={(e) => playThroughFrames(e, -1)}><FontAwesomeIcon icon={faBackward} /></button>
+                <button className="button font-thin h-min" onClick={playThroughFrames}><FontAwesomeIcon icon={faPlay} /></button>
+                <button className="button font-thin h-min" onClick={toNextFrame}><FontAwesomeIcon icon={faForwardStep} /></button>
+                <button className="button font-thin h-min" onClick={toLastFrame}><FontAwesomeIcon icon={faForwardFast} /></button>
+
+              </div><div className="flex flex-col text-sm gap-y-1 font-semibold text-primary">
                 <p>Field Options: </p>
                 <select value={field} onChange={switchFieldOption} name="" id="" className="select-container">
                   <option defaultValue={true}>Select a Value</option>
@@ -192,11 +196,11 @@ export default function TrameVisualizer({
                   sendMessage({ action: "toFrame", time: t })
                 }} className="bg-gray-200 stroke-amber-200" type="range" min={0} value={currentTimeStep} max={MAX_STEP} step={1} name="" id="" />
               </div>
-              </div>
+            </div>
           }
         </div>
         {/* <p className="font-semibold text-primary text-base">Resolution: <span className="font-normal">{resolution}</span></p> */}
-        <iframe id={iframe_id} className="h-full w-full" />
+        <iframe id={iframe_id} className="h-full w-full" sandbox="allow-scripts allow-same-origin" />
       </div>
       {
         currentTab == "festim" && simulation &&
