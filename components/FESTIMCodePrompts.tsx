@@ -333,7 +333,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, sendPyth
                     }, 750)
                 }} className="button mt-auto group tooltip-container">
                     <span className="tooltip">Save Settings</span>
-                    <FontAwesomeIcon className="h-4" icon={faSave}></FontAwesomeIcon>
+                    <FontAwesomeIcon className="text-base" icon={faSave}></FontAwesomeIcon>
                 </button>
                 <button onClick={(e) => {
                     e.target.disabled = true
@@ -342,7 +342,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, sendPyth
                     setTimeout(() => (e.target.disabled = false), 750)
                 }} className="button mt-auto group tooltip-container">
                     <span className="tooltip">Reset Settings and Clear Save</span>
-                    <FontAwesomeIcon className="h-4" icon={faEraser}></FontAwesomeIcon>
+                    <FontAwesomeIcon className="text-base" icon={faEraser}></FontAwesomeIcon>
                 </button>
                 <button onClick={(e) => {
                     e.target.disabled = true
@@ -366,7 +366,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, sendPyth
                     e.target.disabled = false
                 }} className="button mt-auto group tooltip-container">
                     <span className="tooltip">Upload Settings from .JSON</span>
-                    <FontAwesomeIcon className="h-4" icon={faDownload}></FontAwesomeIcon>
+                    <FontAwesomeIcon className="text-base" icon={faDownload}></FontAwesomeIcon>
                 </button>
                 <button onClick={(e) => {
                     e.target.disabled = true
@@ -381,7 +381,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, sendPyth
                     e.target.disabled = false
                 }} className="button mt-auto group tooltip-container">
                     <span className="tooltip">Save Settings as .JSON</span>
-                    <FontAwesomeIcon className="h-4" icon={faFile}></FontAwesomeIcon>
+                    <FontAwesomeIcon className="text-base" icon={faFile}></FontAwesomeIcon>
                 </button>
                 <div className="flex gap-2 h-min overflow-x-auto mt-auto">
                     {

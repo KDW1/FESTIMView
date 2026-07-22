@@ -26,10 +26,11 @@ export type FESTIMStep = {
 // FESTIM simulation, composed of multiple steps
 export type FESTIMSim = {
   title: string;
+  description?: string;
   steps: FESTIMStep[];
   preCode?: string;
-  postCode?: string
-
+  postCode?: string;
+  imageUrl?: string
 }
 
 // Dictionary of FESTIM classes
@@ -850,6 +851,7 @@ export const exampleSimulation: FESTIMSim = {
 export const presetSimulations: FESTIMSim[] = [
   {
     title: "2D Permeation",
+    description: "Lorem ipsum dolor set...",
     preCode: `# Code copied from the 2d_permeation FESTIM example
 import warnings
 
@@ -880,8 +882,10 @@ if F.__version__ != "2.0b2.post2":
       exportsStep,
       // testingPageVariablesStep,
       runStep
-    ]
-  }
+    ],
+    imageUrl: "/2D Permeation.png"
+  },
+  exampleSimulation
 ]
 
 
