@@ -59,6 +59,8 @@ export default function Home() {
   const [args, setArgs] = useState<ConsoleArg[]>([])
   const [processingCode, setProcessingCode] = useState<boolean>(false)
   const [evaluatingCode, setEvaluatingCode] = useState(false)
+  const [exportFolderName, setExportFolderName] = useState("")
+  const [exportWorkingDirectory, setExportWorkingDirectory] = useState("")
 
   const updateArgs = (newArgs: ConsoleArg[]) => {
     setArgs(args => [...args, ...(newArgs.filter(el => el.message))])
@@ -74,7 +76,7 @@ export default function Home() {
     if (DEBUGGING_PARSER) console.log("Parsing with binding: ", indexedBinding)
     let recipe = indexedBinding.recipe
     let modifiedRecipe = recipe
-    
+
     // We invalidate when a local binding, {**} or $$ is lacking
     // When a page lacks that value we DON'T double-count
     let valid = true
@@ -144,7 +146,7 @@ export default function Home() {
           let valueExists = (variableName in indexedBinding.values && indexedBinding.values[variableName].toString() != "")
           let value = valueExists ? indexedBinding.values[variableName] : `{${variableName}}`
 
-          if(!valueExists) valid = false
+          if (!valueExists) valid = false
 
           out.push(value)
           currentIndex += 2
@@ -187,7 +189,7 @@ export default function Home() {
             if (Object.keys(binding).length == 0) continue
 
             let [parsedExpression, expressionValid] = parseRecipe({ values: binding, recipe: expression })
-            if(!expressionValid) valid = false
+            if (!expressionValid) valid = false
 
             listExpressions.push(parsedExpression)
             let nextCharacter = tokens[nextIndex][0]
@@ -213,7 +215,7 @@ export default function Home() {
 
     let [parsedTokens, next_index] = parse(tokens, 0) as [string[], number]
     if (DEBUGGING_PARSER) console.log("Parsed Recipe: \n", parsedTokens.join(""))
-    if(!valid) console.log("This expression is missing some variables...")
+    if (!valid) console.log("This expression is missing some variables...")
     return [parsedTokens.join(""), valid]
   }
 
@@ -240,23 +242,23 @@ export default function Home() {
 
   const identifyExportPath = () => {
     let relevant_filepath = null
-    for(let binding of bindings) {
-    if(binding.exporting && binding.exportAddress) {
-      let exportAddress = binding.exportAddress
-      if(exportAddress && exportAddress.includes("$")) {
-        let [list, address] = exportAddress.split("$")
-        let filepaths = []
-        for(let obj of binding.values[list]) {
-          filepaths.unshift(obj[address])
+    for (let binding of bindings) {
+      if (binding.exporting && binding.exportAddress) {
+        let exportAddress = binding.exportAddress
+        if (exportAddress && exportAddress.includes("$")) {
+          let [list, address] = exportAddress.split("$")
+          let filepaths = []
+          for (let obj of binding.values[list]) {
+            filepaths.unshift(obj[address])
+          }
+          // TODO: THIS SYSTEM BREAKS DOWN IF THERE ARE MULTIPLE EXPORT ADDRESSES, IDK WHAT TO DO THEN
+          relevant_filepath = filepaths[0]
+          console.log("Post processing filepath(s) are: ", filepaths)
+        } else {
+          relevant_filepath = binding.values[exportAddress]
+          console.log("Post processing filepath is: ", relevant_filepath)
         }
-        // TODO: THIS SYSTEM BREAKS DOWN IF THERE ARE MULTIPLE EXPORT ADDRESSES, IDK WHAT TO DO THEN
-        relevant_filepath = filepaths[0]
-        console.log("Post processing filepath(s) are: ", filepaths)
-      } else {
-        relevant_filepath = binding.values[exportAddress]
-        console.log("Post processing filepath is: ", relevant_filepath)
       }
-    }
     }
     setPostProcessingFilepath(relevant_filepath)
     return relevant_filepath
@@ -264,7 +266,7 @@ export default function Home() {
 
   const updateBindings = (binding: string, value: any) => {
     let indexedBinding = bindings[currentIndex]
-    if(binding == "*") {
+    if (binding == "*") {
       // Wildcard triggers rewriting the entire bindings system
       setBindings(value)
       indexedBinding.values = value[currentIndex].values
@@ -295,29 +297,20 @@ export default function Home() {
         message: evaluatingCode ? "Evaluating your expression..." : "Executing code...",
         status: "info"
       }])
-    } else {
-      updateArgs([{
-        message: "Preparing export file...",
-        status: "notification"
-      }])
-      filepath = identifyExportPath()
-    }
-    
-    let apiURL = evaluatingCode ? "/api/eval" : "/api/exec"
-    try {
-      let res = await fetch(apiURL, {
-        method: "POST",
-        body: JSON.stringify({
-          code,
-          postprocessing,
-          filepath
-        }),
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
 
-      if (!postprocessing) {
+      let apiURL = evaluatingCode ? "/api/eval" : "/api/exec"
+      try {
+        let res = await fetch(apiURL, {
+          method: "POST",
+          body: JSON.stringify({
+            code,
+            postprocessing,
+            filepath
+          }),
+          headers: {
+            "Content-Type": "application/json"
+          }
+        })
         let data = await res.json()
         console.log("Data: ", data)
 
@@ -352,58 +345,102 @@ export default function Home() {
             }])
           }
         }
-      } else {
-        let contentType = res.headers.get("Content-Type")
-        console.log("Content-Type: ", contentType)
-        if (contentType == "application/json") {
-          // Whenever we get a JSON response something has gone wrong...
-          let data = await res.json()
-          if (data.error) {
-            updateArgs([{
-              message: data.error,
-              status: "error"
-            }])
-          } else {
-            updateArgs([{
-              message: "Something went wrong...",
-              status: "error"
-            }])
-          }
-          setProcessingCode(false)
-          return
-        }
-
-        try {
-          let blob = await res.blob()
-          let downloadURL = URL.createObjectURL(blob)
-
-          updateArgs([{
-            message: "Sending .zip file",
-            status: "notification"
-          }])
-          setProcessingCode(false)
-          setPostProcessingDone(true)
-          return downloadURL
-        } catch (error) {
-          updateArgs([{
-            message: `Error: ${error}`,
-            status: "error"
-          }])
-          setProcessingCode(false)
-          return null
-        }
+      } catch (error) {
+        const errorMessage = `Failed to send the request Python code snippet to ${apiURL}`
+        updateArgs([{
+          message: errorMessage,
+          status: "error"
+        }])
       }
-    } catch (error) {
-      const errorMessage = `Failed to send the request Python code snippet to ${apiURL}`
-      console.log(error)
-      console.log(errorMessage)
+      setProcessingCode(false)
+    } else {
       updateArgs([{
-        message: errorMessage,
-        status: "error"
+        message: "Preparing export file...",
+        status: "notification"
       }])
-    }
-    setProcessingCode(false)
+      filepath = identifyExportPath()
 
+      try {
+        let res = await fetch("/api/postProcessing", {
+          method: "POST",
+          body: JSON.stringify({
+            code,
+            filepath
+          })
+        })
+        console.log("Post processing response: ", res)
+        if(res.body) {
+          for await (const chunk of res.body) {
+            // console.log(chunk)
+            const decoder = new TextDecoder()
+            const text = decoder.decode(chunk)
+            console.log(text)
+            let data = JSON.parse(decoder.decode(chunk))
+            console.log(data)
+            if(!data.error) {
+              updateArgs([{
+                message: data.output,
+                status: "output"
+              }])
+            }
+            if(data.filepath && data.folder_name) {
+              setExportFolderName(data.folder_name)
+              setExportWorkingDirectory(data.directory)
+            }
+          }
+        }
+        setProcessingCode(false)
+      } catch (error) {
+        console.log("Error: ", error)
+        const errorMessage = `Something went wrong during post processing...`
+        updateArgs([{
+          message: errorMessage,
+          status: "error"
+        }])
+        setProcessingCode(false)
+      }
+
+      // ZOMBIE CODE FOR LOADING THE FILE
+      // let contentType = res.headers.get("Content-Type")
+      // console.log("Content-Type: ", contentType)
+      // if (contentType == "application/json") {
+      //   // Whenever we get a JSON response something has gone wrong...
+      //   let data = await res.json()
+      //   if (data.error) {
+      //     updateArgs([{
+      //       message: data.error,
+      //       status: "error"
+      //     }])
+      //   } else {
+      //     updateArgs([{
+      //       message: "Something went wrong...",
+      //       status: "error"
+      //     }])
+      //   }
+      //   setProcessingCode(false)
+      //   return
+      // }
+
+      // try {
+      //   let blob = await res.blob()
+      //   let downloadURL = URL.createObjectURL(blob)
+
+      //   updateArgs([{
+      //     message: "Sending .zip file",
+      //     status: "notification"
+      //   }])
+      //   setProcessingCode(false)
+      //   setPostProcessingDone(true)
+      //   return downloadURL
+      // } catch (error) {
+      //   updateArgs([{
+      //     message: `Error: ${error}`,
+      //     status: "error"
+      //   }])
+      //   setProcessingCode(false)
+      //   return null
+      // }
+    }
   }
 
 
@@ -429,9 +466,9 @@ export default function Home() {
   return (
     <div className="h-screen bg-primarybg px-16 py-8">
       <main className="relative w-full h-full overflow-y-clip mx-auto flex flex-col md:flex-row gap-4">
-        
+
         <div className="w-full md:w-3/5 flex flex-col gap-4">
-          <div className="flex flex-1 h-5/6">
+          <div className="flex flex-1 h-2/3">
             <TrameVisualizer identifyExportPath={identifyExportPath} postProcessingFilepath={postProcessingFilepath} postProcessingDone={postProcessingDone} setPostProcessingDone={setPostProcessingDone} processingCode={processingCode} sendPythonRequest={sendPythonRequest} mode={mode} currentIndex={currentIndex} setCurrentIndex={(index: number) => setCurrentIndex(index)} updateMode={(mode: "window" | "festim") => setMode(mode)} bindings={bindings} updateBindings={updateBindings} simulation={currentSimulation} />
           </div>
           <PythonConsole args={args} />

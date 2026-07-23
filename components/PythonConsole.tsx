@@ -1,4 +1,5 @@
 import { Geist_Mono } from "next/font/google";
+import { useEffect } from "react";
 
 export type ConsoleArg = {
     message: string,
@@ -9,7 +10,7 @@ export default function PythonConsole({ args }: { args: ConsoleArg[] }) {
     const argColors: { [key: string]: string } = {
         "info": "text-indigo-700",
         "error": "text-rose-700",
-        "output": "text-indigo-400",
+        "output": "text-blue-500",
         "evaluation": "text-green-500",
         "notification": "text-amber-500"
     }
@@ -28,11 +29,15 @@ export default function PythonConsole({ args }: { args: ConsoleArg[] }) {
                 return "NOTIFICATION: "
         }
     }
-
+    useEffect(()=>{
+        let scroll = document.getElementById("scrollbar");
+        if(scroll) scroll.scrollTop = scroll.scrollHeight;
+    }, [args])
     return (
         <div className="flex-1 flex w-full z-10 max-h-1/4 shadow-2xl">
             {/* <p className="font-semibold text-primary">Python Console.</p> */}
-            <div className="w-full flex flex-col overflow-y-auto bg-slate-950 text-xs rounded-md">
+            <div id="scrollbar" className="w-full flex flex-col overflow-y-scroll bg-slate-950 text-xs rounded-md">
+                <div className="flex w-0 h-0"></div>
                 {
                     args.map((arg, i) => (
                         <code key={`arg${i}`} className={`w-full whitespace-pre-line px-4 py-2 font-mono ${argColors[arg.status]} border-b-2 border-slate-800`}>

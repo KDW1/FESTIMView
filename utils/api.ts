@@ -114,6 +114,7 @@ const sendEvalRequest = async (code: string) => {
 const sendPostProcessingRequest = async(code : string, postprocessing : boolean, filepath : string | null = null) => {
     const backend = await getBackend()
     const data = await backend.sendPostProcessingRequest(code, postprocessing, filepath)
+    console.log("Data being sent to Next.js route: ", data)
     return data
 }
 

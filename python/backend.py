@@ -1,7 +1,7 @@
 import os
 import json 
 import traceback
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, Response, request, jsonify, send_file, stream_with_context
 from dotenv import load_dotenv
 import io
 import sys
@@ -68,6 +68,7 @@ def execute_code():
 
         try:
             if postprocessing:
+                app.logger.info("Attempting a stream...")
                 # Subprocess live update as inspired by Dunklin's work on festim-gui and this article:
                 # https://www.endpointdev.com/blog/2015/01/getting-realtime-output-using-python/
                 run_root = (pathlib.Path(tempfile.gettempdir()))
@@ -82,6 +83,7 @@ def execute_code():
                 app.logger.info(script_path.name)
                 
                 def stream_post_processing():
+                    app.logger.info("Running subprocess")
                     process = subprocess.Popen(
                         ["python", "-u", script_path.name],
                         cwd=run_dir,
@@ -90,25 +92,37 @@ def execute_code():
                         text=True,
                         bufsize=1
                     )
+                    app.logger.info("Reading outputs...")
+                    filepath = data.get("filepath", DEFAULT_FILE_PATH)
+                    yield json.dumps({
+                        "success": True,
+                        "output": f"Examine {(run_dir/filepath)} to read the fiels",
+                        "folder_name": filepath,
+                        "directory": run_dir
+                    })
                     while True:
                         output = process.stdout.readline()
                         if output == '' and process.poll() is not None:
-                            app.logger.info("There was no output")
+                            app.logger.info("T")
                             break
                         if output:
-                            app.logger.info(output.strip())
+                            output_str = str(output.strip())
+                            app.logger.info(output_str)
+                            yield json.dumps({
+                                "success": True,
+                                "output": output_str
+                            })
                     exit_code = process.wait()
-                    
                     app.logger.info("Exit code: " + str(exit_code))
                     # read_bp_file_to("out/field_export.bp", "vtk_temp/example")
-                    
-                stream_post_processing()
+                # stream_post_processing()
+                return Response(stream_with_context(stream_post_processing()), content_type="application/json")
                 
-                ## Read specific filename!
-                filepath = data.get("filepath", DEFAULT_FILE_PATH)
-                memory_file, download_name = zip_from_folder(filepath, run_dir)
+                # ## Read specific filename!
+                # filepath = data.get("filepath", DEFAULT_FILE_PATH)
+                # memory_file, download_name = zip_from_folder(filepath, run_dir)
                 
-                return send_file(memory_file, download_name=download_name, as_attachment=True)
+                # return send_file(memory_file, download_name=download_name, as_attachment=True)
             else:
                 with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
                     app.logger.info("Executing file now...")
@@ -130,11 +144,13 @@ def execute_code():
                     "output": output
                 })
         except SyntaxError as e:
+            app.logger.info( f"Syntax Error: {str(e)}")
             return jsonify({
                 "success": False,
                 "error": f"Syntax Error: {str(e)}"
             }), 400
         except Exception as e:
+            app.logger.info(f"Exception: {str(e)}")
             return jsonify({
                 "success": False,
                 "error": f"Exception: {str(e)}"
@@ -184,11 +200,13 @@ def evaluate_expression():
                 "output": output
             })
         except SyntaxError as e:
+            app.logger.info(f"Syntax Error: {str(e)}")
             return jsonify({
                 "success": False,
                 "error": f"Syntax Error: {str(e)}"
             }), 400
         except Exception as e:
+            app.logger.info(f"Error: {str(e)}")
             return jsonify({
                 "success": False,
                 "error": f"Error: {str(e)}"
