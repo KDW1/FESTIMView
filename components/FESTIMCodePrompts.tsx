@@ -217,46 +217,48 @@ export default function FESTIMCodePrompts({ simulation, processingCode, sendPyth
                     )
                 case "run":
                     return (
-                        <button disabled={processingCode} onClick={async (e) => {
-                            e.preventDefault()
-                            let [stepsArray, allFormsValid] = validityCheck(bindings)
-                            if (allFormsValid) {
-                                let downloadURL = await sendPythonRequest(null, true)
-                                if (downloadURL) {
-                                    let link = document.createElement("a")
-                                    link.href = downloadURL
-                                    link.download = "paraview_exports.zip"
-                                    link.click()
-                                    link.remove()
-                                }
-                            } else {
-                                let threshold = 4
-                                let unvalidatedSteps = []
-
-                                for (let step of stepsArray) {
-                                    if (!step.valid) unvalidatedSteps.push(step)
-                                }
-
-                                setShowAlert(true)
-                                if (unvalidatedSteps.length > threshold) {
-                                    setAlerts([`${unvalidatedSteps.length} steps are incomplete!`])
+                        <div className="flex flex-col gap-y-2">
+                            <button disabled={processingCode} onClick={async (e) => {
+                                e.preventDefault()
+                                let [stepsArray, allFormsValid] = validityCheck(bindings)
+                                if (allFormsValid) {
+                                    let downloadURL = await sendPythonRequest(null, true)
+                                    if (downloadURL) {
+                                        let link = document.createElement("a")
+                                        link.href = downloadURL
+                                        link.download = "paraview_exports.zip"
+                                        link.click()
+                                        link.remove()
+                                    }
                                 } else {
-                                    let out = unvalidatedSteps.map(step => `"${step.title}" step is not complete`)
-                                    setAlerts(out)
+                                    let threshold = 4
+                                    let unvalidatedSteps = []
+
+                                    for (let step of stepsArray) {
+                                        if (!step.valid) unvalidatedSteps.push(step)
+                                    }
+
+                                    setShowAlert(true)
+                                    if (unvalidatedSteps.length > threshold) {
+                                        setAlerts([`${unvalidatedSteps.length} steps are incomplete!`])
+                                    } else {
+                                        let out = unvalidatedSteps.map(step => `"${step.title}" step is not complete`)
+                                        setAlerts(out)
+                                    }
+
+                                    setTimeout(() => {
+                                        setShowAlert(false)
+                                    }, 3000)
+
+                                    setTimeout(() => {
+                                        setAlerts([])
+                                    }, 3500);
                                 }
-
-                                setTimeout(() => {
-                                    setShowAlert(false)
-                                }, 3000)
-
-                                setTimeout(() => {
-                                    setAlerts([])
-                                }, 3500);
-                            }
-                            console.log(bindings)
-                        }} className={`px-2 py-1 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-300 hover:bg-primarybg duration-300 ease-in-out transition bg-lightbg rounded-md`}>
-                            Run Code and Download .zip File
-                        </button>
+                                console.log(bindings)
+                            }} className={`px-2 py-1 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-300 hover:bg-primarybg duration-300 ease-in-out transition bg-lightbg rounded-md`}>
+                                Run Code and Download Exports
+                            </button>
+                        </div>
                     )
                 default:
                     if (setting.type in customClasses) {
@@ -353,7 +355,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, sendPyth
                     fileUploadInput.addEventListener("change", (e) => {
                         console.log(e.target.files)
                         let file = e.target.files[0]
-                        if(file) {
+                        if (file) {
                             const reader = new FileReader()
                             reader.onload = () => {
                                 let jsonContent = reader.result

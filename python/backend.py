@@ -6,12 +6,20 @@ from dotenv import load_dotenv
 import io
 import sys
 from contextlib import redirect_stdout, redirect_stderr
+import subprocess
+import threading
+import contextlib
+import tempfile
+import pathlib
+
 # from read_my_bp import read_bp_file_to
 
 load_dotenv()
 
-def zip_from_folder(folder_name):
-    filepath = os.path.join(os.getcwd(), folder_name)
+def zip_from_folder(folder_name, cwd:pathlib.Path=None):
+    if cwd is None: cwd = os.getcwd()
+    
+    app.logger.info("Current Working Directory: " + cwd.name)
     
     import zipfile
     import time
@@ -19,16 +27,13 @@ def zip_from_folder(folder_name):
     timestr = time.strftime("%Y%m%d-%H%M%S")
     download_name = "field_export.zip".format(timestr)
     memory_file = io.BytesIO()
-
+    app.logger.info(f"Zipping up file")
     with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for root, dirs, files in os.walk(filepath, topdown=False):
+        for root, dirs, files in os.walk(cwd, topdown=False):
             for file in files:
-                indexOfOut = root.index(folder_name)
-                zipf.write(os.path.join(root[indexOfOut:], file))
+                arcname = os.path.relpath(os.path.join(root, file), cwd)
+                zipf.write(os.path.join(root, file), arcname)
     memory_file.seek(0)
-    
-    app.logger.info("Current Working Directory: " + os.getcwd())
-    app.logger.info("Returning .zip file of: " +  filepath)
     
     return memory_file, download_name
 
@@ -46,7 +51,6 @@ def execute_code():
         data = request.get_json()
         code = data.get("code", "")
         postprocessing = data.get("postprocessing", "")
-        app.logger.info(data)
         
         if postprocessing:
             app.logger.info("We are post processing (Flask)!")
@@ -63,36 +67,68 @@ def execute_code():
         temp_namespace = {}
 
         try:
-            with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-                exec(code, temp_namespace)
-            
-            output = stdout_capture.getvalue()
-            error_output = stderr_capture.getvalue()
-            
-            if error_output and not postprocessing:
-                # Since for some reason the FESTIM updates are registered as error output
-                print("There was an error output oh no: ", error_output)
-                return jsonify({
-                    "success": False,
-                    "output": output,
-                    "error": error_output
-                })
-            if not postprocessing:
+            if postprocessing:
+                # Subprocess live update as inspired by Dunklin's work on festim-gui and this article:
+                # https://www.endpointdev.com/blog/2015/01/getting-realtime-output-using-python/
+                run_root = (pathlib.Path(tempfile.gettempdir()))
+                run_root.mkdir(parents=True, exist_ok=True)
+                run_dir = pathlib.Path(tempfile.mkdtemp(prefix="festim-view-", dir=run_root))
+
+                script_path = run_dir / "script.py"
+                script_path.write_text(code, encoding="utf-8")
+                app.logger.info(f"Made run root: {run_root.absolute()}")
+                app.logger.info("Made run dir: {run_dir.absolute()}")
+                app.logger.info("Running subprocess")
+                app.logger.info(script_path.name)
+                
+                def stream_post_processing():
+                    process = subprocess.Popen(
+                        ["python", "-u", script_path.name],
+                        cwd=run_dir,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        bufsize=1
+                    )
+                    while True:
+                        output = process.stdout.readline()
+                        if output == '' and process.poll() is not None:
+                            app.logger.info("There was no output")
+                            break
+                        if output:
+                            app.logger.info(output.strip())
+                    exit_code = process.wait()
+                    
+                    app.logger.info("Exit code: " + str(exit_code))
+                    # read_bp_file_to("out/field_export.bp", "vtk_temp/example")
+                    
+                stream_post_processing()
+                
+                ## Read specific filename!
+                filepath = data.get("filepath", DEFAULT_FILE_PATH)
+                memory_file, download_name = zip_from_folder(filepath, run_dir)
+                
+                return send_file(memory_file, download_name=download_name, as_attachment=True)
+            else:
+                with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                    app.logger.info("Executing file now...")
+                    exec(code, temp_namespace)
+                
+                output = stdout_capture.getvalue()
+                error_output = stderr_capture.getvalue()
+                
+                if error_output and not postprocessing:
+                    # Since for some reason the FESTIM updates are registered as error output
+                    print("There was an error output oh no: ", error_output)
+                    return jsonify({
+                        "success": False,
+                        "output": output,
+                        "error": error_output
+                    })
                 return jsonify({
                     "success": True,
                     "output": output
                 })
-            else:
-                if error_output:
-                    app.logger.info("Error output occurred...")
-                    app.logger.info(error_output)
-                # read_bp_file_to("out/field_export.bp", "vtk_temp/example")
-                
-                ## Read specific filename!
-                filepath = data.get("filepath", DEFAULT_FILE_PATH)
-                app.logger.info("Our filepath argument was: ", filepath)
-                memory_file, download_name = zip_from_folder(filepath)
-                return send_file(memory_file, download_name=download_name, as_attachment=True)
         except SyntaxError as e:
             return jsonify({
                 "success": False,

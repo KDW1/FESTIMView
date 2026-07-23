@@ -429,18 +429,19 @@ export default function Home() {
   return (
     <div className="h-screen bg-primarybg px-16 py-8">
       <main className="relative w-full h-full overflow-y-clip mx-auto flex flex-col md:flex-row gap-4">
-        <div className="w-full md:w-1/2 h-full flex flex-col flex-1 relative">
+        
+        <div className="w-full md:w-3/5 flex flex-col gap-4">
+          <div className="flex flex-1 h-5/6">
+            <TrameVisualizer identifyExportPath={identifyExportPath} postProcessingFilepath={postProcessingFilepath} postProcessingDone={postProcessingDone} setPostProcessingDone={setPostProcessingDone} processingCode={processingCode} sendPythonRequest={sendPythonRequest} mode={mode} currentIndex={currentIndex} setCurrentIndex={(index: number) => setCurrentIndex(index)} updateMode={(mode: "window" | "festim") => setMode(mode)} bindings={bindings} updateBindings={updateBindings} simulation={currentSimulation} />
+          </div>
+          <PythonConsole args={args} />
+        </div>
+        <div className="w-full md:w-2/5 h-full flex flex-col flex-1 relative">
           <PythonCodeEditor sendPythonRequest={sendPythonRequest} setEvaluatingCode={setEvaluatingCode} evaluatingCode={evaluatingCode} processingCode={processingCode} setProcessingCode={setProcessingCode} snippetOnly={snippetOnly} setSnippetOnly={(value: boolean) => {
             setSnippetOnly(value)
             let indexedBinding = bindings[currentIndex]
             updateCodeWithIndexedBinding(indexedBinding, value)
           }} mode={mode} pythonCode={pythonCode} updatePythonCode={updatePythonCode} args={args} updateArgs={updateArgs} />
-        </div>
-        <div className="w-full md:w-1/2 flex flex-col gap-4">
-          <div className="flex flex-1 h-5/6">
-            <TrameVisualizer identifyExportPath={identifyExportPath} postProcessingFilepath={postProcessingFilepath} postProcessingDone={postProcessingDone} setPostProcessingDone={setPostProcessingDone} processingCode={processingCode} sendPythonRequest={sendPythonRequest} mode={mode} currentIndex={currentIndex} setCurrentIndex={(index: number) => setCurrentIndex(index)} updateMode={(mode: "window" | "festim") => setMode(mode)} bindings={bindings} updateBindings={updateBindings} simulation={currentSimulation} />
-          </div>
-          <PythonConsole args={args} />
         </div>
       </main>
     </div>

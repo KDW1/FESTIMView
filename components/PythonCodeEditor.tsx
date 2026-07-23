@@ -111,8 +111,9 @@ export default function PythonCodeEditor({ pythonCode, evaluatingCode, processin
                     defaultLanguage="python"
                     value={pythonCode}
                     options={{
-                        readOnly: mode == "festim",
-                        wordWrap: "on"
+                        readOnly: mode == "festim", // For now we permanently fix the editor so it's read-only
+                        wordWrap: "on",
+                        fontSize: 14
                     }}
                     onChange={(val: string | undefined) => {
                         if (!val) return
