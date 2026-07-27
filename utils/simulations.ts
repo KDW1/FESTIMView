@@ -889,20 +889,51 @@ if F.__version__ != "2.0b2.post2":
 ]
 
 
-export const populateBindings: Function = (simulation: FESTIMSim, storedBindings : object[], empty : boolean = false) => {
+export const populateBindings: Function = (simulation: FESTIMSim, storedBindings: object[], empty: boolean = false) => {
   let bindings = []
-  if(typeof storedBindings == "undefined") storedBindings = []
+  if (typeof storedBindings == "undefined") storedBindings = []
+
+  let correspondingObjectProperties = (objectKeys: string[], query: string) => {
+    let out: string[] = []
+    for (let key of objectKeys) {
+      if (key.includes(query)) {
+        out.push(key)
+      }
+    }
+    return out
+  }
+
   for (let i = 0; i < simulation.steps.length; i++) {
     let step: FESTIMStep = simulation.steps[i]
     let values: { [key: string]: any } = {}
-    if(!empty) {
+    if (!empty) {
       let storedBinding = storedBindings[i]
-      // We initialize the values
+      let objectKeys = null
+
+      if (storedBinding) {
+        let keys = Object.keys(storedBinding.values)
+        console.log(keys)
+        objectKeys = keys.filter(key => key.includes("."))
+        console.log("Object keys are: ", objectKeys)
+      }
+
       for (let setting of step.settings) {
         let binding = setting.name ?? setting.title
+        let objectProps: string[] = []
+        if (objectKeys) {
+          objectProps = correspondingObjectProperties(objectKeys, binding)
+          console.log(`Object properties with stem ${binding}`, objectProps)
+        }
+
         if (setting.defaultValue || (storedBinding && binding in storedBinding.values)) {
+          console.log("Found direct link...")
+          console.log(binding)
           values[binding] = setting.defaultValue ?? storedBinding.values[binding]
+          for (let objectProp of objectProps) {
+            values[objectProp] = storedBinding.values[objectProp]
+          }
         } else {
+          console.log("Son")
           values[binding] = setting.list ? [{}] : ""
         }
       }
