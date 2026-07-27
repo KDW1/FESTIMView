@@ -30,7 +30,8 @@ export type FESTIMSim = {
   steps: FESTIMStep[];
   preCode?: string;
   postCode?: string;
-  imageUrl?: string
+  imageUrl?: string;
+  imageCaption?: string;
 }
 
 // Dictionary of FESTIM classes
@@ -843,16 +844,19 @@ const runStep: FESTIMStep = {
 
 export const exampleSimulation: FESTIMSim = {
   title: "Example Simulation",
+  description: "This is an example simulation that introcues new users to the concepts of simple variables, object properties, and lists in FESTIM View",
+  imageCaption: "A simple character profile of Miles Morales which illustrates the FESTIM View templating conventions",
   steps: [
     exampleStep
-  ]
+  ],
+  imageUrl: "/Example Simulation.png"
 }
 
-export const presetSimulations: FESTIMSim[] = [
-  {
-    title: "2D Permeation",
-    description: "Lorem ipsum dolor set...",
-    preCode: `# Code copied from the 2d_permeation FESTIM example
+export const permeation2DSimulation: FESTIMSim = {
+  title: "2D Permeation",
+  description: "In this task, we’ll go through the basics of FESTIM and run a simple permeation simulation on a 2D domain.",
+  imageCaption: "Image of a Hydrogen isotope permeating across a simple 2D rectangular mesh",
+  preCode: `# Code copied from the 2d_permeation FESTIM example
 import warnings
 
 import dolfinx
@@ -867,24 +871,27 @@ if F.__version__ != "2.0b2.post2":
         "If you are using a different version, the results may differ.",
         stacklevel=2,
     )`,
-    steps: [
-      problemStep,
-      meshStep,
-      materialsStep,
-      domainsStep,
-      speciesStep,
-      initialConditionsStep,
-      reactionsStep,
-      boundaryConditionsStep,
-      particleSourcesStep,
-      temperatureStep,
-      settingsStep,
-      exportsStep,
-      // testingPageVariablesStep,
-      runStep
-    ],
-    imageUrl: "/2D Permeation.png"
-  },
+  steps: [
+    problemStep,
+    meshStep,
+    materialsStep,
+    domainsStep,
+    speciesStep,
+    initialConditionsStep,
+    reactionsStep,
+    boundaryConditionsStep,
+    particleSourcesStep,
+    temperatureStep,
+    settingsStep,
+    exportsStep,
+    // testingPageVariablesStep,
+    runStep
+  ],
+  imageUrl: "/2D Permeation.png"
+}
+
+export const presetSimulations: FESTIMSim[] = [
+  permeation2DSimulation,
   exampleSimulation
 ]
 
@@ -922,18 +929,14 @@ export const populateBindings: Function = (simulation: FESTIMSim, storedBindings
         let objectProps: string[] = []
         if (objectKeys) {
           objectProps = correspondingObjectProperties(objectKeys, binding)
-          console.log(`Object properties with stem ${binding}`, objectProps)
         }
 
         if (setting.defaultValue || (storedBinding && binding in storedBinding.values)) {
-          console.log("Found direct link...")
-          console.log(binding)
           values[binding] = setting.defaultValue ?? storedBinding.values[binding]
           for (let objectProp of objectProps) {
             values[objectProp] = storedBinding.values[objectProp]
           }
         } else {
-          console.log("Son")
           values[binding] = setting.list ? [{}] : ""
         }
       }
