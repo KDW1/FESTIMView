@@ -7,6 +7,7 @@ import Image from "next/image";
 import TrameVisualizer from "@/components/TrameVisualizer";
 import { customClasses, exampleSimulation, FESTIMSetting, FESTIMSim, FESTIMStep, populateBindings, presetSimulations } from "@/utils/simulations";
 import { initialize } from "next/dist/server/lib/render-server";
+import SimulationsMenu from "@/components/SimulationsMenu";
 
 // TODO: Need to develop some full fledged context for the Python Code Editor in order to avoid prop drilling
 
@@ -27,35 +28,37 @@ export type Binding = {
 const DEBUGGING_PARSER = false
 
 export default function Home() {
-  const defaultSimulation: FESTIMSim = presetSimulations[0]
-
-  let initializedBindings = []
-  let localStorageBindings = []
+  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim | null>(presetSimulations[0])
 
   // Note this method of storing bindings locally will change in the future
   // Since I'm pretty sure this isn't reliable
 
-  if (typeof window !== 'undefined' && localStorage.getItem("bindings")) {
-    let objects
-    try {
-      objects = JSON.parse(localStorage.getItem("bindings"))
-      // console.log("Objects: ", objects)
-    } catch (error) {
-      console.log("Error: ", error)
-      objects = null
-    }
-    localStorageBindings = objects
-  }
+  // TODO: Work on standardigizng the code for saving settings to local storage
+  const loadBindingsFromLocalStorage = () => {
+    let localStorageBindings = []
 
-  initializedBindings = populateBindings(defaultSimulation, localStorageBindings)
+    if (typeof window !== 'undefined' && localStorage.getItem("bindings")) {
+      let objects
+      try {
+        objects = JSON.parse(localStorage.getItem("bindings"))
+        // console.log("Objects: ", objects)
+      } catch (error) {
+        console.log("Error: ", error)
+        objects = null
+      }
+      localStorageBindings = objects
+    }
+    console.log("Local Storage Bindings: ", localStorageBindings)
+    console.log(currentSimulation.title)
+    return localStorageBindings
+  }
 
   const [postProcessingFilepath, setPostProcessingFilepath] = useState([""])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [postProcessingDone, setPostProcessingDone] = useState(true)
+  const [postProcessingDone, setPostProcessingDone] = useState(false)
   const [mode, setMode] = useState<"window" | "festim">("festim")
   const [snippetOnly, setSnippetOnly] = useState<boolean>(true)
-  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim | null>(presetSimulations[0])
-  const [bindings, setBindings] = useState<Binding[]>(initializedBindings ?? []) // Bindings for selected simulations
+  const [bindings, setBindings] = useState<Binding[]>(populateBindings(currentSimulation, loadBindingsFromLocalStorage()[currentSimulation.title])) // Bindings for selected simulations
   const [args, setArgs] = useState<ConsoleArg[]>([])
   const [processingCode, setProcessingCode] = useState<boolean>(false)
   const [evaluatingCode, setEvaluatingCode] = useState(false)
@@ -71,6 +74,25 @@ export default function Home() {
   const updatePythonCode = (code: string) => {
     setPythonCode(code)
   }
+
+  const selectSimulation = (sim: FESTIMSim) => {
+        // Change the current simulation and reset other basic variables
+        // TODO: Check issue with snippets loading out of order
+
+        // As of now there probably won't be any overlapping keys between stored local bindings,
+        // but I should work on naming them for different simulations later on
+        console.log("Changing Simulation: ", loadBindingsFromLocalStorage()[sim.title])
+        setBindings(populateBindings(sim, loadBindingsFromLocalStorage()[sim.title]))
+
+        setCurrentSimulation(sim)
+        setMode("festim")
+        setPostProcessingDone(false)
+        setCurrentIndex(0)
+        setArgs([])
+        setExportFolderName("")
+        setExportWorkingDirectory("")
+        setSimulationsMenuVisible(false)
+    }
 
   const parseRecipe = (indexedBinding: { values: { [key: string]: any }, recipe: string }) => {
     if (DEBUGGING_PARSER) console.log("Parsing with binding: ", indexedBinding)
@@ -292,7 +314,7 @@ export default function Home() {
 
   // Python Code Evaluation
   const sendPythonRequest = async (code?: string, postprocessing?: boolean, downloadingExport?: boolean) => {
-    // TODO: Catch Response 500 errors, switch the modes to a switch statement
+    // TODO: Catch Response 500 errors, switch the modes to a switch statement, check error catching as a whole
     let filepath = null
     if (!code) code = pythonCode
     setProcessingCode(true)
@@ -397,6 +419,7 @@ export default function Home() {
           }
         }
         setProcessingCode(false)
+        setPostProcessingDone(true)
         updateArgs([{
           message: "Done with post processing, you can download your export or view it in the post processing page",
           status: "notification"
@@ -410,47 +433,6 @@ export default function Home() {
         }])
         setProcessingCode(false)
       }
-
-      // ZOMBIE CODE FOR LOADING THE FILE
-      // let contentType = res.headers.get("Content-Type")
-      // console.log("Content-Type: ", contentType)
-      // if (contentType == "application/json") {
-      //   // Whenever we get a JSON response something has gone wrong...
-      //   let data = await res.json()
-      //   if (data.error) {
-      //     updateArgs([{
-      //       message: data.error,
-      //       status: "error"
-      //     }])
-      //   } else {
-      //     updateArgs([{
-      //       message: "Something went wrong...",
-      //       status: "error"
-      //     }])
-      //   }
-      //   setProcessingCode(false)
-      //   return
-      // }
-
-      // try {
-      //   let blob = await res.blob()
-      //   let downloadURL = URL.createObjectURL(blob)
-
-      //   updateArgs([{
-      //     message: "Sending .zip file",
-      //     status: "notification"
-      //   }])
-      //   setProcessingCode(false)
-      //   setPostProcessingDone(true)
-      //   return downloadURL
-      // } catch (error) {
-      //   updateArgs([{
-      //     message: `Error: ${error}`,
-      //     status: "error"
-      //   }])
-      //   setProcessingCode(false)
-      //   return null
-      // }
     } else if (downloadingExport) {
       updateArgs([{
         message: "Preparing export file",
@@ -497,7 +479,6 @@ export default function Home() {
             status: "notification"
           }])
           setProcessingCode(false)
-          setPostProcessingDone(true)
           return downloadURL
         } catch (error) {
           updateArgs([{
@@ -531,15 +512,18 @@ export default function Home() {
         updateCodeWithIndexedBinding(indexedBinding, snippetVisibility)
       }
     }
-  }, [currentIndex, mode])
+  }, [currentIndex, mode, currentSimulation])
+    const [simulationsMenuVisible, setSimulationsMenuVisible] = useState(false)
 
   return (
     <div className="h-screen bg-primarybg px-16 py-8">
+      <SimulationsMenu selectSimulation={selectSimulation} simulationsMenuVisible={simulationsMenuVisible} setSimulationsMenuVisible={setSimulationsMenuVisible} simulations={presetSimulations}/>
+      
       <main className="relative w-full h-full overflow-y-clip mx-auto flex flex-col md:flex-row gap-4">
 
         <div className="w-full md:w-3/5 flex flex-col gap-4">
           <div className="flex flex-1 h-2/3">
-            <TrameVisualizer identifyExportPath={identifyExportPath} postProcessingFilepath={postProcessingFilepath} postProcessingDone={postProcessingDone} setPostProcessingDone={setPostProcessingDone} processingCode={processingCode} sendPythonRequest={sendPythonRequest} mode={mode} currentIndex={currentIndex} setCurrentIndex={(index: number) => setCurrentIndex(index)} updateMode={(mode: "window" | "festim") => setMode(mode)} bindings={bindings} updateBindings={updateBindings} simulation={currentSimulation} />
+            <TrameVisualizer setSimulationsMenuVisible={setSimulationsMenuVisible} identifyExportPath={identifyExportPath} postProcessingFilepath={postProcessingFilepath} postProcessingDone={postProcessingDone} setPostProcessingDone={setPostProcessingDone} processingCode={processingCode} sendPythonRequest={sendPythonRequest} mode={mode} currentIndex={currentIndex} setCurrentIndex={(index: number) => setCurrentIndex(index)} updateMode={(mode: "window" | "festim") => setMode(mode)} bindings={bindings} updateBindings={updateBindings} simulation={currentSimulation} />
           </div>
           <PythonConsole args={args} />
         </div>

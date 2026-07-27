@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLastfmSquare } from "@fortawesome/free-brands-svg-icons";
 import { faBackward, faBackwardFast, faBackwardStep, faCross, faForwardFast, faForwardStep, faPlay, faScrewdriverWrench, faWrench, faX, faXmark } from "@fortawesome/free-solid-svg-icons";
 import Image from "next/image";
+import SimulationsMenu from "./SimulationsMenu";
 
 // Entire structre is copied from trame-react since legacy dependencies with
 // react-scripts, react-dom is preventing the package from functioning normally
@@ -28,13 +29,14 @@ type VisualizerProps = {
   setCurrentIndex: Function;
   sendPythonRequest: Function;
   processingCode: boolean;
+  setSimulationsMenuVisible: Function;
 };
 
 const iframe_id = "my_frame"
 const iframe_url = "http://localhost:5000/iframe"
 
 export default function TrameVisualizer({
-  onCommunicatorReady, identifyExportPath, postProcessingFilepath, postProcessingDone, setPostProcessingDone, processingCode, simulation, sendPythonRequest, updateBindings, bindings, mode, updateMode, currentIndex, setCurrentIndex
+  onCommunicatorReady, identifyExportPath, setSimulationsMenuVisible, postProcessingFilepath, postProcessingDone, setPostProcessingDone, processingCode, simulation, sendPythonRequest, updateBindings, bindings, mode, updateMode, currentIndex, setCurrentIndex
 }: VisualizerProps) {
   const tabs = simulation ? ["Window", "FESTIM"] : ["Window"]
   const [resolution, setResolution] = useState("...")
@@ -42,7 +44,6 @@ export default function TrameVisualizer({
   const [currentTab, setCurrentTab] = useState(mode)
   const [currentTimeStep, setCurrentTimeStep] = useState(0)
   const [dataInitialized, setDataInitialized] = useState(false)
-  const [simulationsMenuVisible, setSimulationsMenuVisible] = useState(false)
 
   // Hard coded variables until I can figure out the reverse proxy...
   const STEP = 1
@@ -97,6 +98,10 @@ export default function TrameVisualizer({
     };
   }, [])
 
+  useEffect(()=>{
+    setCurrentTab(mode)
+  }, [mode])
+
   const sendMessage = (value: { [key: string]: any }) => {
     let iframe = document.getElementById(iframe_id)
     if ("time" in value) {
@@ -117,32 +122,8 @@ export default function TrameVisualizer({
     sendMessage({ "action": "downloadData", "filepath": filepath })
   }
 
-  const selectSimulation = (obj: FESTIMSim) => {
-    console.log("Selecting simulation: ", obj.title)
-  }
-  useEffect(() => { console.log("hi") }, [simulationsMenuVisible])
   return (
     <div className="relative w-full flex h-full container text-base text-primary">
-      {
-        simulationsMenuVisible &&
-        <div className="absolute left-0 top-0 w-full h-full container  z-20 bg-primarybg/50!">
-          <div className="container w-4/5 h-4/5 m-auto shadow-2xl shadow-blue-500">
-            <FontAwesomeIcon onClick={() => setSimulationsMenuVisible(false)} className="ml-auto cursor-pointer hover:text-red-400 ease-in-out duration-300" icon={faXmark}></FontAwesomeIcon>          
-            <p className="text-base text-center">Preset Simulations</p>
-            <div className="overflow-y-auto py-4 w-full flex-row flex-wrap gap-2 flex flex-1">
-              {
-                presetSimulations.map((obj, i) => (
-                  <div onClick={() => selectSimulation(obj)} key={`simulation${i}`} className="hover:-translate-y-2 ease-in-out duration-300 cursor-pointer w-auto flex flex-col min-w-max h-min min-h-min px-2 py-2  rounded bg-lightbg">
-                    <p className="text-base text-primary">{obj.title}</p>
-                    <p className="text-sm text-lightprimary">{obj.description}</p>
-                    {obj.imageUrl && <Image alt={`Display image for ${obj.title} simulation`} height={1000} width={1000} src={obj.imageUrl} className="rounded mt-4 w-auto h-46"></Image>}
-                  </div>
-                ))
-              }
-            </div>
-          </div>
-        </div>
-      }
       <div className="flex flex-row">
         <p className="italic text-sm">{simulation ? simulation.title : "Post Processing Window"}</p>
         <button onClick={() => setSimulationsMenuVisible(true)} className="cursor-pointer group tooltip-container text-primary flex ml-auto gap-2">
@@ -168,7 +149,7 @@ export default function TrameVisualizer({
       </div>
       {
         currentTab == "festim" && simulation &&
-        <FESTIMCodePrompts sendPythonRequest={sendPythonRequest} processingCode={processingCode} currentIndex={currentIndex} setCurrentIndex={setCurrentIndex} bindings={bindings} updateBindings={updateBindings} simulation={simulation} />
+        <FESTIMCodePrompts postProcessingDone={postProcessingDone} sendPythonRequest={sendPythonRequest} processingCode={processingCode} currentIndex={currentIndex} setCurrentIndex={setCurrentIndex} bindings={bindings} updateBindings={updateBindings} simulation={simulation} />
       }
     </div>
   )

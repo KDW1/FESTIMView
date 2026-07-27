@@ -891,6 +891,7 @@ if F.__version__ != "2.0b2.post2":
 
 export const populateBindings: Function = (simulation: FESTIMSim, storedBindings : object[], empty : boolean = false) => {
   let bindings = []
+  if(typeof storedBindings == "undefined") storedBindings = []
   for (let i = 0; i < simulation.steps.length; i++) {
     let step: FESTIMStep = simulation.steps[i]
     let values: { [key: string]: any } = {}
