@@ -1,10 +1,5 @@
 import { sendExecRequest, sendPostProcessingRequest } from "@/utils/api"
 import { NextResponse } from "next/server"
-export async function GET() {
-  return Response.json({
-    projectName: 'Next.js',
-  })
-}
 
 export async function POST(req: Request) {
   const { code, postprocessing, filepath } = await req.json()

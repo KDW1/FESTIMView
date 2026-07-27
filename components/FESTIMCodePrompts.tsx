@@ -256,7 +256,47 @@ export default function FESTIMCodePrompts({ simulation, processingCode, sendPyth
                                 }
                                 console.log(bindings)
                             }} className={`px-2 py-1 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-300 hover:bg-primarybg duration-300 ease-in-out transition bg-lightbg rounded-md`}>
-                                Run Code and Download Exports
+                                Run Code
+                            </button>
+                            <button disabled={processingCode} onClick={async (e) => {
+                                e.preventDefault()
+                                let [stepsArray, allFormsValid] = validityCheck(bindings)
+                                if (allFormsValid) {
+                                    let downloadURL = await sendPythonRequest(null, false, true)
+                                    if (downloadURL) {
+                                        let link = document.createElement("a")
+                                        link.href = downloadURL
+                                        link.download = "paraview_exports.zip"
+                                        link.click()
+                                        link.remove()
+                                    }
+                                } else {
+                                    let threshold = 4
+                                    let unvalidatedSteps = []
+
+                                    for (let step of stepsArray) {
+                                        if (!step.valid) unvalidatedSteps.push(step)
+                                    }
+
+                                    setShowAlert(true)
+                                    if (unvalidatedSteps.length > threshold) {
+                                        setAlerts([`${unvalidatedSteps.length} steps are incomplete!`])
+                                    } else {
+                                        let out = unvalidatedSteps.map(step => `"${step.title}" step is not complete`)
+                                        setAlerts(out)
+                                    }
+
+                                    setTimeout(() => {
+                                        setShowAlert(false)
+                                    }, 3000)
+
+                                    setTimeout(() => {
+                                        setAlerts([])
+                                    }, 3500);
+                                }
+                                console.log(bindings)
+                            }} className={`px-2 py-1 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-300 hover:bg-primarybg duration-300 ease-in-out transition bg-lightbg rounded-md`}>
+                                Download .ZIP File of Exports
                             </button>
                         </div>
                     )

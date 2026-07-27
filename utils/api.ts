@@ -22,6 +22,18 @@ class Backend {
         }
     }
 
+    async sendZipFileRequest(filepath : string, directory : string) {
+        const data = await this.sendRequest("/download_zip", "POST", { filepath, directory })
+        if(!data.error) {
+            return data
+        } else {
+            return {
+                sucess: false,
+                error: data.error
+            }
+        }
+    }
+
     async sendExecRequest(code: string) {
         console.log("Sending execution request...")
         const data = await this.sendRequest("/exec", "POST", { code }).then(res => this.convertToJSON(res))
@@ -114,12 +126,18 @@ const sendEvalRequest = async (code: string) => {
 const sendPostProcessingRequest = async(code : string, postprocessing : boolean, filepath : string | null = null) => {
     const backend = await getBackend()
     const data = await backend.sendPostProcessingRequest(code, postprocessing, filepath)
-    console.log("Data being sent to Next.js route: ", data)
+    return data
+}
+
+const sendZipFileRequest = async(filepath : string, directory : string) => {
+    const backend = await getBackend()
+    const data = await backend.sendZipFileRequest(filepath, directory)
     return data
 }
 
 export {
     sendExecRequest,
     sendEvalRequest,
-    sendPostProcessingRequest
+    sendPostProcessingRequest,
+    sendZipFileRequest
 }

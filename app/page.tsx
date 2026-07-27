@@ -240,7 +240,7 @@ export default function Home() {
     }
   }
 
-  const identifyExportPath = () => {
+  const identifyExportPath = (include_cwd_prefix = false) => {
     let relevant_filepath = null
     for (let binding of bindings) {
       if (binding.exporting && binding.exportAddress) {
@@ -260,6 +260,9 @@ export default function Home() {
         }
       }
     }
+    console.log("Working Directory: ", exportWorkingDirectory)
+    if (include_cwd_prefix) relevant_filepath = `${exportWorkingDirectory}/${relevant_filepath}`
+    console.log("Relevant Path: ", relevant_filepath)
     setPostProcessingFilepath(relevant_filepath)
     return relevant_filepath
   }
@@ -288,11 +291,12 @@ export default function Home() {
 
 
   // Python Code Evaluation
-  const sendPythonRequest = async (code?: string, postprocessing?: boolean) => {
+  const sendPythonRequest = async (code?: string, postprocessing?: boolean, downloadingExport?: boolean) => {
+    // TODO: Catch Response 500 errors, switch the modes to a switch statement
     let filepath = null
     if (!code) code = pythonCode
     setProcessingCode(true)
-    if (!postprocessing) {
+    if (!postprocessing  && !downloadingExport) {
       updateArgs([{
         message: evaluatingCode ? "Evaluating your expression..." : "Executing code...",
         status: "info"
@@ -353,9 +357,9 @@ export default function Home() {
         }])
       }
       setProcessingCode(false)
-    } else {
+    } else if (postprocessing) {
       updateArgs([{
-        message: "Preparing export file...",
+        message: "Preparing to post-process",
         status: "notification"
       }])
       filepath = identifyExportPath()
@@ -369,27 +373,34 @@ export default function Home() {
           })
         })
         console.log("Post processing response: ", res)
-        if(res.body) {
+        if (res.body) {
           for await (const chunk of res.body) {
             // console.log(chunk)
             const decoder = new TextDecoder()
             const text = decoder.decode(chunk)
             console.log(text)
-            let data = JSON.parse(decoder.decode(chunk))
+            let data = JSON.parse(`[${decoder.decode(chunk).replaceAll("}{", "},{")}]`)
             console.log(data)
-            if(!data.error) {
-              updateArgs([{
-                message: data.output,
-                status: "output"
-              }])
-            }
-            if(data.filepath && data.folder_name) {
-              setExportFolderName(data.folder_name)
-              setExportWorkingDirectory(data.directory)
+            for (let message of data) {
+              if (!message.error) {
+                updateArgs([{
+                  message: message.output,
+                  status: "output"
+                }])
+
+                if (message.folder_name && message.directory) {
+                  setExportFolderName(message.folder_name)
+                  setExportWorkingDirectory(message.directory)
+                }
+              }
             }
           }
         }
         setProcessingCode(false)
+        updateArgs([{
+          message: "Done with post processing, you can download your export or view it in the post processing page",
+          status: "notification"
+        }])
       } catch (error) {
         console.log("Error: ", error)
         const errorMessage = `Something went wrong during post processing...`
@@ -440,6 +451,65 @@ export default function Home() {
       //   setProcessingCode(false)
       //   return null
       // }
+    } else if (downloadingExport) {
+      updateArgs([{
+        message: "Preparing export file",
+        status: "notification"
+      }])
+      try {
+        let res = await fetch("/api/downloadZip", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            filepath: exportFolderName,
+            directory: exportWorkingDirectory
+          })
+        })
+
+        let contentType = res.headers.get("Content-Type")
+        console.log("Content-Type: ", contentType)
+        if (contentType == "application/json") {
+          // Whenever we get a JSON response something has gone wrong...
+          let data = await res.json()
+          if (data.error) {
+            updateArgs([{
+              message: data.error,
+              status: "error"
+            }])
+          } else {
+            updateArgs([{
+              message: "Something went wrong...",
+              status: "error"
+            }])
+          }
+          setProcessingCode(false)
+          return
+        }
+
+        try {
+          let blob = await res.blob()
+          let downloadURL = URL.createObjectURL(blob)
+
+          updateArgs([{
+            message: "Sending .zip file",
+            status: "notification"
+          }])
+          setProcessingCode(false)
+          setPostProcessingDone(true)
+          return downloadURL
+        } catch (error) {
+          updateArgs([{
+            message: `Error: ${error}`,
+            status: "error"
+          }])
+          setProcessingCode(false)
+          return null
+        }
+      } catch (error) {
+
+      }
     }
   }
 

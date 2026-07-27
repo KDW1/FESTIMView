@@ -112,7 +112,7 @@ export default function TrameVisualizer({
   }
   const loadData = () => {
     setField("Solid (default)")
-    let filepath = identifyExportPath()
+    let filepath = identifyExportPath(true)
     console.log("Filepath to be read: ", filepath)
     sendMessage({ "action": "downloadData", "filepath": filepath })
   }

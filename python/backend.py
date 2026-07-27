@@ -16,10 +16,10 @@ import pathlib
 
 load_dotenv()
 
-def zip_from_folder(folder_name, cwd:pathlib.Path=None):
+def zip_from_folder(folder_name, cwd:pathlib.Path | str=None):
     if cwd is None: cwd = os.getcwd()
     
-    app.logger.info("Current Working Directory: " + cwd.name)
+    if(isinstance(cwd, pathlib.Path)): app.logger.info("Current Working Directory: " + cwd.name)
     
     import zipfile
     import time
@@ -27,7 +27,7 @@ def zip_from_folder(folder_name, cwd:pathlib.Path=None):
     timestr = time.strftime("%Y%m%d-%H%M%S")
     download_name = "field_export.zip".format(timestr)
     memory_file = io.BytesIO()
-    app.logger.info(f"Zipping up file")
+    app.logger.info("Zipping up file")
     with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(cwd, topdown=False):
             for file in files:
@@ -43,7 +43,14 @@ DEFAULT_FILE_PATH = "out/field_export.bp"
 @app.route("/")
 def index():
     return jsonify({"success": True, "message": "Server is online and running..."})
-
+@app.route("/download_zip", methods=["POST"])
+def download_zip():
+    data = request.get_json()
+    filepath = data.get("filepath", DEFAULT_FILE_PATH)
+    run_dir = data.get("directory", "")
+    memory_file, download_name = zip_from_folder(filepath, run_dir)
+    
+    return send_file(memory_file, download_name=download_name, as_attachment=True)
 @app.route("/exec", methods=["POST", "GET"])
 def execute_code():
     app.logger.info("Received a request to /exec")
@@ -94,15 +101,16 @@ def execute_code():
                     )
                     app.logger.info("Reading outputs...")
                     filepath = data.get("filepath", DEFAULT_FILE_PATH)
-                    yield json.dumps({
-                        "success": True,
-                        "output": f"Examine {(run_dir/filepath)} to read the fiels",
-                        "folder_name": filepath,
-                        "directory": run_dir
-                    })
+                    sent_file_alert = False
                     while True:
                         output = process.stdout.readline()
-                        if output == '' and process.poll() is not None:
+                        if output == '':
+                            yield json.dumps({
+                                "success": True,
+                                "output": f"Examine {(run_dir/filepath)} to read the files",
+                                "folder_name": str(filepath),
+                                "directory": str(run_dir)
+                            })
                             app.logger.info("T")
                             break
                         if output:
