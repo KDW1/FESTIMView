@@ -35,7 +35,7 @@ export default function Home() {
     exampleSimulation,
     gmshSimulation
   ]
-  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim | null>(PRESET_SIMULATIONS[0])
+  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim | null>(PRESET_SIMULATIONS[2])
 
   // Note this method of storing bindings locally will change in the future
   // Since I'm pretty sure this isn't reliable
@@ -55,8 +55,6 @@ export default function Home() {
       }
       localStorageBindings = objects
     }
-    console.log("Local Storage Bindings: ", localStorageBindings)
-    console.log(currentSimulation.title)
     return localStorageBindings
   }
 
@@ -345,7 +343,6 @@ export default function Home() {
           }
         })
         let data = await res.json()
-        console.log("Data: ", data)
 
         if (data.error) {
           updateArgs([{
@@ -353,7 +350,6 @@ export default function Home() {
             status: "error"
           }])
         } else {
-          console.log(`Data from ${apiURL},`, data)
           if (evaluatingCode) {
             updateArgs([{
               message: "Successfully evaluated code...",
@@ -407,9 +403,7 @@ export default function Home() {
             // console.log(chunk)
             const decoder = new TextDecoder()
             const text = decoder.decode(chunk)
-            console.log(text)
             let data = JSON.parse(`[${decoder.decode(chunk).replaceAll("}{", "},{")}]`)
-            console.log(data)
             for (let message of data) {
               if (!message.error) {
                 updateArgs([{
@@ -418,6 +412,7 @@ export default function Home() {
                 }])
 
                 if (message.folder_name && message.directory) {
+                  console.log("Message with file details: ", message)
                   setExportFolderName(message.folder_name)
                   setExportWorkingDirectory(message.directory)
                 }
@@ -445,6 +440,8 @@ export default function Home() {
         message: "Preparing export file",
         status: "notification"
       }])
+      console.log("Folder: ", exportFolderName)
+      console.log("CWD: ", exportWorkingDirectory)
       try {
         let res = await fetch("/api/downloadZip", {
           method: "POST",

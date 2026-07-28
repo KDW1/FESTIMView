@@ -13,6 +13,7 @@ export type FESTIMSetting = {
   options?: string[]; // Options for enum type
   name?: string;
   defaultValue?: string;
+  propertiesToExclude?: string[]; // List of properties to exclude (make optional per-se) for objects
 }
 
 // Step in a FESTIM simulation
@@ -157,6 +158,7 @@ $interfaces--{*interface.variable*}=F.Interface(id={*interface.id*}, subdomains=
   },
   "species": {
     title: "Species",
+    name: "species",
     settings: [
       {
         title: "Species",
@@ -175,6 +177,7 @@ $
   },
   "initialConditions": {
     title: "Initial Conditions",
+    name: "initialConditions",
     settings: [
       {
         title: "Initial Concentrations",
@@ -192,6 +195,7 @@ $concentrations--{*concentration.variable*} = F.InitialConcentration(species={*c
   },
   "reactions": {
     title: "Reactions",
+    name: "reactions",
     settings: [
       {
         title: "Reactions",
@@ -217,6 +221,7 @@ $reactions--{*reaction.variable*} = F.Reaction(
   },
   "boundaryConditions": {
     title: "Boundary Conditions",
+    name: "boundaryConditions",
     settings: [
       {
         title: "Boundary Conditions",
@@ -232,6 +237,7 @@ $fixed_bcs--{*fixed_bc.variable*} = F.FixedConcentrationBC(subdomain={*fixed_bc.
   },
   "particleSources": {
     title: "Particle Sources",
+    name: "particleSources",
     settings: [
       {
         title: "Particle Sources",
@@ -246,6 +252,7 @@ $sources--{*source.variable*} = F.ParticleSource(species={*source.species_variab
   },
   "temperature": {
     title: "Temperature",
+    name: "temperature",
     settings: [
       {
         title: "Temperature (K)",
@@ -259,6 +266,7 @@ $sources--{*source.variable*} = F.ParticleSource(species={*source.species_variab
   },
   "settings": {
     title: "Settings",
+    name: "settings",
     settings: [
       {
         title: "atoi",
@@ -293,6 +301,7 @@ $sources--{*source.variable*} = F.ParticleSource(species={*source.species_variab
   },
   "exports": {
     title: "Exports",
+    name: "exports",
     settings: [
       {
         title: "Field export list variable",
@@ -351,6 +360,7 @@ $volume_quantities--{*volume_quantity.variable*} = F.{*volume_quantity.quantity_
   },
   "run": {
     title: "Run",
+    name: "run",
     description: "Proceed to run the simulation",
     settings: [
       {
@@ -438,9 +448,7 @@ export const populateBindings: Function = (simulation: FESTIMSim, storedBindings
 
       if (storedBinding) {
         let keys = Object.keys(storedBinding.values)
-        console.log(keys)
         objectKeys = keys.filter(key => key.includes("."))
-        console.log("Object keys are: ", objectKeys)
       }
 
       for (let setting of step.settings) {

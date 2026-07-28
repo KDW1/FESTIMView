@@ -88,7 +88,7 @@ function InputList({ processingCode, setting, list, bindings, updateBindings, cu
                     if (classSetting.type in customClasses) {
                         return (
                             <div className="flex flex-col gap-y-2">
-                                {customClasses[classSetting.type].map(classProperty => (
+                                {customClasses[classSetting.type].filter(classProperty => !(classSetting.propertiesToExclude ?? []).includes(classProperty.name)).map(classProperty => (
                                     <div key={`${classProperty.title}`} className="flex flex-col">
                                         <p className="text-sm">
                                             {classProperty.title}{classProperty.description && <em>, {classProperty.description}</em>}

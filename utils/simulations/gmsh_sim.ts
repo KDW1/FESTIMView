@@ -1,4 +1,4 @@
-import { FESTIMSim, genericSteps } from "../simulations";
+import { ClassDictionary, FESTIMSim, genericSteps } from "../simulations";
 
 export const gmshSimulation: FESTIMSim = {
   title: "Mesh with GMSH",
@@ -119,17 +119,174 @@ cell_tags = mesh_data.cell_tags
 cell_tags.name = "Cell markers"
 
 print(f"Cell tags: {np.unique(cell_tags.values)}")
-print(f"Facet tags: {np.unique(facet_tags.values)}")`,
+print(f"Facet tags: {np.unique(facet_tags.values)}")
+
+import festim as F
+
+#---- The pre-code is everything above ----#`,
   steps: [
-    genericSteps["problem"],
-    // Mesh Sstep
-    // Materials step
-    // Domains step
-    // Meshtag steps
+    {
+    title: "Problem",
+    name: "problem",
+    description: "Create the root FESTIM problem object.",
+    settings: [
+      {
+        title: "Python variable",
+        name: "problem_variable",
+        type: "string"
+      }
+    ],
+    recipe: "# Create empty problem\n{*problem_variable*}=F.HydrogenTransportProblem()"
+  },
+    {
+        title: "Mesh",
+        name: "mesh",
+        settings: [],
+        recipe: `@problem--{*problem_variable*}@.mesh = F.Mesh(mesh)`
+    },
+    {
+        title: "Materials",
+        name: "materials",
+        settings: [
+            {
+                title: "Materials",
+                name: "materials",
+                type: "material",
+                itemName: "material",
+                propertiesToExclude: ["E_K_S", "K_S_0"],
+                list: true
+            }
+        ],
+        recipe: `$materials--{*material.variable*} = F.Material(name="{*material.name*}", D_0={*material.D_0*}, E_D={*material.E_D*})$`
+    },
+    {
+        title: "Domains",
+        description: "These domains correspond to the geometric faces of the mesh we defined in gmsh",
+        name: "domains",
+        settings: [],
+        recipe: `top_volume = F.VolumeSubdomain(id=11, material=material)
+
+tube_surf = F.SurfaceSubdomain(id=7)
+walls = F.SurfaceSubdomain(id=5)
+top_surface = F.SurfaceSubdomain(id=1)
+bottom_surface = F.SurfaceSubdomain(id=3)
+
+@problem--{*problem_variable*}@.subdomains = [top_surface, bottom_surface, tube_surf, walls, top_volume]
+`
+    },
+    {
+        title: "Mesh Tags",
+        description: "These are predefined mesh tags which were defined from data extracted from the mesh we made in gmsh.",
+        name: "meshtags",
+        settings: [],
+        recipe: `@problem--{*problem_variable*}@.facet_meshtags = facet_tags
+@problem--{*problem_variable*}@.volume_meshtags = cell_tags`
+    },
+    {
+    title: "Species",
+    name: "species",
+    settings: [
+      {
+        title: "Species",
+        type: "species",
+        name: "specieses",
+        propertiesToExclude: ["mobile", "subdomains"],
+        list: true
+      }
+    ],
+    recipe:
+      `# Create species
+$specieses--{*species.variable*} = F.Species(name="{*species.name*}")
+$
+
+@problem--{*problem_variable*}@.species = [$specieses--{*species.variable*}, $]`
+  },
     genericSteps["boundaryConditions"],
     genericSteps["temperature"],
-    genericSteps["settings"],
-    genericSteps["exports"],
+    {
+    title: "Settings",
+    name: "settings",
+    settings: [
+      {
+        title: "atoi",
+        type: "number",
+        name: "atoi"
+      },
+      {
+        title: "rtoi",
+        type: "number",
+        name: "rtoi"
+      },
+      {
+        title: "Transient",
+        type: "boolean",
+        name: "transient"
+      },
+    ],
+    recipe: `# Settings
+@problem--{*problem_variable*}@.settings = F.Settings(
+    atol={*atoi*}, rtol={*rtoi*}, transient={*transient*}
+)`
+  },
+    {
+      title: "Exports",
+      name: "exports",
+      exporting: true,
+      exportAddress: "vtx_exports$vtx_export.filename",
+      settings: [
+      {
+        title: "Field export list variable",
+        name: "field_export_list_variable",
+        type: "string"
+      },
+      {
+        title: "VTX Species Exports",
+        type: "vtx_export",
+        name: "vtx_exports",
+        propertiesToExclude: ["volume_subdomain_variable", "field_expression"],
+        list: true
+      },],
+      recipe: `# Exports
+$vtx_exports--{*vtx_export.variable*} = F.VTXSpeciesExport(
+  filename=f"{*vtx_export.filename*}",
+  field=@problem--{*problem_variable*}.species@,
+  subdomain=top_volume
+)$
+
+{*field_export_list_variable*} = [$vtx_exports--{*vtx_export.variable*}, $]
+
+@problem--{*problem_variable*}@.exports = {*field_export_list_variable*}`
+
+    },
     genericSteps["run"]
   ]
+}
+
+export const gmshClasses : ClassDictionary = {
+    "materialSimple": [
+    {
+      title: "Variable",
+      description: "variable name",
+      name: "variable",
+      type: "string"
+    },
+    {
+      title: "Name",
+      description: "the name of the material",
+      name: "name",
+      type: "string"
+    },
+    {
+      title: "D_0",
+      description: "the pre-exponential factor of the diffusion coefficient (m2/s)",
+      name: "D_0",
+      type: "number"
+    },
+    {
+      title: "E_D",
+      description: "the activation energy of the diffusion coefficient (eV)",
+      name: "E_D",
+      type: "number"
+    }
+  ],
 }
