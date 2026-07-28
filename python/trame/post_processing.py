@@ -14,6 +14,8 @@ from trame.widgets import vuetify3 as v3
 
 class PostProcessing(TrameApp):
     DEFAULT_FILE_PATH = "out/field_export.bp"
+    DEFAULT_COLOR_PRESET = "Fast"
+    
     file = None
     async def child_receive_msg(self, data):
             print("Received message: ", data)
@@ -114,12 +116,34 @@ class PostProcessing(TrameApp):
                 name = array.GetName()
                 options.append({"title": name, "value": f"{location}:::{name}"})
 
-        self.times = self.reader.TimestepValues
-        self.state.pv_time_idx_max = len(self.times) - 1
-        self.state.pv_time_idx = 0
-        self.state.pv_time_controls_width = self._time_controls_width(len(self.times))
+        if self.reader.TimestepValues:
+            self.times = self.reader.TimestepValues
+            self.state.pv_time_idx_max = len(self.times) - 1
+            self.state.pv_time_idx = 0
+            self.state.pv_time_controls_width = self._time_controls_width(len(self.times))
 
         self.state.pv_color_options = options
+        # self.state.pv_color_preset_options = simple.color.ListColorPresetNames()
+        
+        # Instead of the full range of color presets I copy the default ones from Paraview
+        self.state.pv_color_preset_options = [
+            "Fast",
+            "Turbo",
+            "Cool to Warm",
+            "Cool to Warm (Extended)",
+            "Black Body Radiation",
+            "X Ray",
+            "Inferno",
+            "Black, Blue and White",
+            "Blue Orange (divergent)",
+            "Viridis",
+            "Cold and Hot",
+            "Linear Green (Gr4L)",
+            "Rainbow Desaturated",
+            "Blue - Green - Orange",
+            "Rainbow Uniform",
+            "Yellow - Gray - Blue"
+        ]
         self.representation.Visibility = 1
         self.representation.SetScalarBarVisibility(self.view, True)
 
@@ -153,6 +177,27 @@ class PostProcessing(TrameApp):
         else:
             self.representation.ColorBy(pv_color_by.split(":::"))
 
+        if self.ctx.view:
+            self.ctx.view.update()
+
+    @change("pv_color_preset")
+    def _on_color_preset(self, pv_color_preset, **_):
+        if self.representation is None:
+            return
+
+        if pv_color_preset is None:
+            for pv_color_option in self.state.pv_color_options:
+                title, value = pv_color_option.values()
+                color_function_name = value.split(":::")[1]
+                color_tf = simple.GetColorTransferFunction(color_function_name)
+                color_tf.ApplyPreset(self.DEFAULT_COLOR_PRESET, True)
+        else:
+            for pv_color_option in self.state.pv_color_options:
+                title, value = pv_color_option.values()
+                color_function_name = value.split(":::")[1]
+                color_tf = simple.GetColorTransferFunction(color_function_name)
+                color_tf.ApplyPreset(pv_color_preset, True)
+            
         if self.ctx.view:
             self.ctx.view.update()
 
@@ -194,100 +239,100 @@ class PostProcessing(TrameApp):
                                 ctx_name="view",
                                 style="width: 100%; height: 100%;",
                             )
-                            with html.Div(
-                                style=(
-                                    "{"
-                                    " position: 'absolute',"
-                                    " left: '1rem',"
-                                    " right: '1rem',"
-                                    " bottom: '1rem',"
-                                    " display: 'flex',"
-                                    " justifyContent: 'center',"
-                                    " zIndex: 10,"
-                                    " pointerEvents: 'none'"
-                                    "}",
-                                )
-                            ):
-                                with v3.VCard(
-                                    elevation=4,
-                                    style=(
-                                        "{"
-                                        " backgroundColor: '#ffffff',"
-                                        " width: pv_time_controls_width,"
-                                        " maxWidth: 'calc(100vw - 2rem)',"
-                                        " pointerEvents: 'auto'"
-                                        "}",
-                                    ),
-                                ):
-                                    with v3.VCardText(classes="px-2 py-1"):
-                                        with html.Div(classes="d-flex align-center ga-0"):
-                                            v3.VBtn(
-                                                icon="mdi-skip-previous",
-                                                variant="plain",
-                                                click="pv_time_idx = 0",
-                                                density="compact",
-                                                disabled=("pv_time_idx <= 0", True),
-                                            )
-                                            v3.VBtn(
-                                                icon="mdi-chevron-left",
-                                                variant="plain",
-                                                click="pv_time_idx = Math.max(pv_time_idx - 1, 0)",
-                                                density="compact",
-                                                disabled=("pv_time_idx <= 0", True),
-                                            )
-                                            v3.VBtn(
-                                                icon="mdi-stop",
-                                                variant="plain",
-                                                click="pv_play=false",
-                                                v_if=("pv_play", False),
-                                                density="compact",
-                                            )
-                                            v3.VBtn(
-                                                icon="mdi-play",
-                                                variant="plain",
-                                                click="pv_play=true",
-                                                v_else=True,
-                                                density="compact",
-                                            )
-                                            v3.VBtn(
-                                                icon="mdi-chevron-right",
-                                                variant="plain",
-                                                click="pv_time_idx = Math.min(pv_time_idx + 1, pv_time_idx_max)",
-                                                density="compact",
-                                                disabled=(
-                                                    "pv_time_idx < 0 || pv_time_idx >= pv_time_idx_max",
-                                                    True,
-                                                ),
-                                            )
-                                            v3.VBtn(
-                                                icon="mdi-skip-next",
-                                                variant="plain",
-                                                click="pv_time_idx = pv_time_idx_max",
-                                                density="compact",
-                                                disabled=(
-                                                    "pv_time_idx < 0 || pv_time_idx >= pv_time_idx_max",
-                                                    True,
-                                                ),
-                                            )
-                                            with html.Div(classes="flex-grow-1"):
-                                                v3.VSlider(
-                                                    v_model=("pv_time_idx", -1),
-                                                    min=0,
-                                                    step=1,
-                                                    max=("pv_time_idx_max", -1),
-                                                    hide_details=True,
-                                                    density="comfortable",
-                                                    disabled=("pv_time_idx_max < 0", True),
-                                                    classes="px-2",
-                                                )
-                                            html.Div(
-                                                "{{ pv_time_idx_max >= 0 ? '(' + (pv_time_idx + 1) + ' / ' + (pv_time_idx_max + 1) + ')' : '(0 / 0)' }}",
-                                                classes="text-body-2 text-no-wrap pr-2",
-                                            )
-                                            html.Div(
-                                                "t = {{ time_value }}",
-                                                classes="text-body-2 text-no-wrap",
-                                            )
+                            # with html.Div(
+                            #     style=(
+                            #         "{"
+                            #         " position: 'absolute',"
+                            #         " left: '1rem',"
+                            #         " right: '1rem',"
+                            #         " bottom: '1rem',"
+                            #         " display: 'flex',"
+                            #         " justifyContent: 'center',"
+                            #         " zIndex: 10,"
+                            #         " pointerEvents: 'none'"
+                            #         "}",
+                            #     )
+                            # ):
+                            #     with v3.VCard(
+                            #         elevation=4,
+                            #         style=(
+                            #             "{"
+                            #             " backgroundColor: '#ffffff',"
+                            #             " width: pv_time_controls_width,"
+                            #             " maxWidth: 'calc(100vw - 2rem)',"
+                            #             " pointerEvents: 'auto'"
+                            #             "}",
+                            #         ),
+                            #     ):
+                            #         with v3.VCardText(classes="px-2 py-1"):
+                            #             with html.Div(classes="d-flex align-center ga-0"):
+                            #                 v3.VBtn(
+                            #                     icon="mdi-skip-previous",
+                            #                     variant="plain",
+                            #                     click="pv_time_idx = 0",
+                            #                     density="compact",
+                            #                     disabled=("pv_time_idx <= 0", True),
+                            #                 )
+                            #                 v3.VBtn(
+                            #                     icon="mdi-chevron-left",
+                            #                     variant="plain",
+                            #                     click="pv_time_idx = Math.max(pv_time_idx - 1, 0)",
+                            #                     density="compact",
+                            #                     disabled=("pv_time_idx <= 0", True),
+                            #                 )
+                            #                 v3.VBtn(
+                            #                     icon="mdi-stop",
+                            #                     variant="plain",
+                            #                     click="pv_play=false",
+                            #                     v_if=("pv_play", False),
+                            #                     density="compact",
+                            #                 )
+                            #                 v3.VBtn(
+                            #                     icon="mdi-play",
+                            #                     variant="plain",
+                            #                     click="pv_play=true",
+                            #                     v_else=True,
+                            #                     density="compact",
+                            #                 )
+                            #                 v3.VBtn(
+                            #                     icon="mdi-chevron-right",
+                            #                     variant="plain",
+                            #                     click="pv_time_idx = Math.min(pv_time_idx + 1, pv_time_idx_max)",
+                            #                     density="compact",
+                            #                     disabled=(
+                            #                         "pv_time_idx < 0 || pv_time_idx >= pv_time_idx_max",
+                            #                         True,
+                            #                     ),
+                            #                 )
+                            #                 v3.VBtn(
+                            #                     icon="mdi-skip-next",
+                            #                     variant="plain",
+                            #                     click="pv_time_idx = pv_time_idx_max",
+                            #                     density="compact",
+                            #                     disabled=(
+                            #                         "pv_time_idx < 0 || pv_time_idx >= pv_time_idx_max",
+                            #                         True,
+                            #                     ),
+                            #                 )
+                            #                 with html.Div(classes="flex-grow-1"):
+                            #                     v3.VSlider(
+                            #                         v_model=("pv_time_idx", -1),
+                            #                         min=0,
+                            #                         step=1,
+                            #                         max=("pv_time_idx_max", -1),
+                            #                         hide_details=True,
+                            #                         density="comfortable",
+                            #                         disabled=("pv_time_idx_max < 0", True),
+                            #                         classes="px-2",
+                            #                     )
+                            #                 html.Div(
+                            #                     "{{ pv_time_idx_max >= 0 ? '(' + (pv_time_idx + 1) + ' / ' + (pv_time_idx_max + 1) + ')' : '(0 / 0)' }}",
+                            #                     classes="text-body-2 text-no-wrap pr-2",
+                            #                 )
+                            #                 html.Div(
+                            #                     "t = {{ time_value }}",
+                            #                     classes="text-body-2 text-no-wrap",
+                            #                 )
 
                 with self.ui.toolbar.clear() as toolbar:
                     toolbar.density = "comfortable"
@@ -295,6 +340,16 @@ class PostProcessing(TrameApp):
                         label="Color By",
                         v_model=("pv_color_by", None),
                         items=("pv_color_options", []),
+                        density="compact",
+                        hide_details=True,
+                        variant="outlined",
+                        style="max-width: 250px;",
+                        classes="mx-2",
+                    )
+                    v3.VSelect(
+                        label="Color Preset",
+                        v_model=("pv_color_preset", "Fast"),
+                        items=("pv_color_preset_options", []),
                         density="compact",
                         hide_details=True,
                         variant="outlined",

@@ -33,7 +33,7 @@ type VisualizerProps = {
 };
 
 const iframe_id = "my_frame"
-const iframe_url = "http://localhost:5000/iframe"
+const iframe_url = "http://localhost:8080"
 
 export default function TrameVisualizer({
   onCommunicatorReady, identifyExportPath, setSimulationsMenuVisible, postProcessingFilepath, postProcessingDone, setPostProcessingDone, processingCode, simulation, sendPythonRequest, updateBindings, bindings, mode, updateMode, currentIndex, setCurrentIndex

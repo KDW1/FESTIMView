@@ -28,6 +28,7 @@ export type Binding = {
 }
 
 const DEBUGGING_PARSER = false
+const IN_DEVELOPMENT = !process.env.PRODUCTION
 
 export default function Home() {
   const PRESET_SIMULATIONS = [
@@ -60,7 +61,7 @@ export default function Home() {
 
   const [postProcessingFilepath, setPostProcessingFilepath] = useState([""])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [postProcessingDone, setPostProcessingDone] = useState(false)
+  const [postProcessingDone, setPostProcessingDone] = useState(true)
   const [mode, setMode] = useState<"window" | "festim">("festim")
   const [snippetOnly, setSnippetOnly] = useState<boolean>(true)
   const [bindings, setBindings] = useState<Binding[]>(populateBindings(currentSimulation, loadBindingsFromLocalStorage()[currentSimulation.title])) // Bindings for selected simulations
@@ -268,6 +269,10 @@ export default function Home() {
   }
 
   const identifyExportPath = (include_cwd_prefix = false) => {
+    if(IN_DEVELOPMENT) {
+      setExportFolderName(localStorage.getItem("exportFolderName") ?? exportFolderName)
+      setExportWorkingDirectory(localStorage.getItem("exportWorkingDirectory") ?? exportWorkingDirectory)
+    }
     let relevant_filepath = null
     for (let binding of bindings) {
       if (binding.exporting && binding.exportAddress) {
@@ -415,6 +420,11 @@ export default function Home() {
                   console.log("Message with file details: ", message)
                   setExportFolderName(message.folder_name)
                   setExportWorkingDirectory(message.directory)
+                  if(IN_DEVELOPMENT) {
+                    // Quick access to the last run's filepath so it makes some post processing debugging easier
+                    localStorage.setItem("exportFolderName", message.folder_name)
+                    localStorage.setItem("exportWorkingDirectory", message.directory)
+                  }
                 }
               }
             }
@@ -440,8 +450,16 @@ export default function Home() {
         message: "Preparing export file",
         status: "notification"
       }])
-      console.log("Folder: ", exportFolderName)
-      console.log("CWD: ", exportWorkingDirectory)
+      let filepath = exportFolderName
+      let directory = exportWorkingDirectory
+      if(IN_DEVELOPMENT) {
+        filepath = localStorage.getItem("exportFolderName") ?? filepath
+        setExportFolderName(filepath)
+        directory = localStorage.getItem("exportWorkingDirectory") ?? directory
+        setExportWorkingDirectory(directory)
+      }
+      console.log("Filepath: ", filepath)
+      console.log("Directory: ", directory)
       try {
         let res = await fetch("/api/downloadZip", {
           method: "POST",
@@ -449,8 +467,8 @@ export default function Home() {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            filepath: exportFolderName,
-            directory: exportWorkingDirectory
+            filepath,
+            directory
           })
         })
 
