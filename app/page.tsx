@@ -5,9 +5,11 @@ import { useEffect, useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import TrameVisualizer from "@/components/TrameVisualizer";
-import { customClasses, exampleSimulation, FESTIMSetting, FESTIMSim, FESTIMStep, populateBindings, presetSimulations } from "@/utils/simulations";
+import { customClasses, exampleSimulation, FESTIMSetting, FESTIMSim, FESTIMStep, populateBindings } from "@/utils/simulations";
 import { initialize } from "next/dist/server/lib/render-server";
 import SimulationsMenu from "@/components/SimulationsMenu";
+import { permeation2DSimulation } from "@/utils/simulations/2d_permeation_sim";
+import { gmshSimulation } from "@/utils/simulations/gmsh_sim";
 
 // TODO: Need to develop some full fledged context for the Python Code Editor in order to avoid prop drilling
 
@@ -28,7 +30,12 @@ export type Binding = {
 const DEBUGGING_PARSER = false
 
 export default function Home() {
-  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim | null>(presetSimulations[0])
+  const PRESET_SIMULATIONS = [
+    permeation2DSimulation,
+    exampleSimulation,
+    gmshSimulation
+  ]
+  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim | null>(PRESET_SIMULATIONS[0])
 
   // Note this method of storing bindings locally will change in the future
   // Since I'm pretty sure this isn't reliable
@@ -517,7 +524,7 @@ export default function Home() {
 
   return (
     <div className="h-screen bg-primarybg px-16 py-8">
-      <SimulationsMenu selectSimulation={selectSimulation} simulationsMenuVisible={simulationsMenuVisible} setSimulationsMenuVisible={setSimulationsMenuVisible} simulations={presetSimulations}/>
+      <SimulationsMenu selectSimulation={selectSimulation} simulationsMenuVisible={simulationsMenuVisible} setSimulationsMenuVisible={setSimulationsMenuVisible} simulations={PRESET_SIMULATIONS}/>
       
       <main className="relative w-full h-full overflow-y-clip mx-auto flex flex-col md:flex-row gap-4">
 

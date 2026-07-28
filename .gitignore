@@ -5,6 +5,8 @@
 /python/__pycache__/
 
 # dependencies
+/gmsh
+/python/festim_example/
 /paraview
 /node_modules
 /.pnp
