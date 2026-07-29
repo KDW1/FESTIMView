@@ -82,20 +82,23 @@ class PostProcessing(TrameApp):
         )
 
         if file_to_load:
-            self.load_file(file_to_load)
-            print("Loaded file: ", file_to_load)
+            print("Loading file: ", file_to_load)
+            self.load_file(file_to_load, reloading=True)
+            print("Successfully loaded file")
 
     def _time_controls_width(self, time_count):
         return f"min(calc(100vw - 2rem), calc({max(time_count, 1)} * 5px + 24rem))"
 
-    def load_file(self, file_path):
+    def load_file(self, file_path, reloading = False):
         file_path = Path(file_path).resolve()
         if not file_path.exists():
             if self.representation is not None:
                 self.representation.Visibility = 0
             return
 
-        if self.reader is None:
+        if self.reader is None or reloading:
+            for source in simple.GetSources().values():
+                simple.Delete(source)
             self.reader = simple.ADIOS2VTXReader(FileName=str(file_path))
             self.representation = simple.Show(self.reader, self.view)
         else:
@@ -131,7 +134,7 @@ class PostProcessing(TrameApp):
             "Turbo",
             "Cool to Warm",
             "Cool to Warm (Extended)",
-            "Black Body Radiation",
+            "Black-Body Radiation",
             "X Ray",
             "Inferno",
             "Black, Blue and White",
@@ -225,6 +228,15 @@ class PostProcessing(TrameApp):
             with SinglePageLayout(
                 self.server, template_name=template_name, full_height=True
             ) as self.ui:
+                comm = iframe.Communicator(
+                    event_names=["parent_to_child"],
+                    parent_to_child=(self.child_receive_msg, "[$event]"),
+                )
+                self.ctrl.child_post_message = comm.post_message
+                
+                self.ui.icon.click = self.ctrl.view_reset_camera
+                self.ui.title.set_text("Festim PostProcessor")
+                
                 with self.ui.content:
                     with v3.VContainer(
                         fluid=True,

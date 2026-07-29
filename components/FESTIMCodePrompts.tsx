@@ -154,6 +154,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
     const [currentStep, setCurrentStep] = useState(simulation.steps[currentIndex])
     const [selectingStep, setSelectingStep] = useState(false)
     const [alerts, setAlerts] = useState([""])
+    const [alertMode, setAlertMode] = useState("error")
     const [showAlert, setShowAlert] = useState(false)
 
     const stepNames = simulation.steps.map(s => s.title)
@@ -232,6 +233,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                                         if (!step.valid) unvalidatedSteps.push(step)
                                     }
 
+                                    setAlertMode("error")
                                     setShowAlert(true)
                                     if (unvalidatedSteps.length > threshold) {
                                         setAlerts([`${unvalidatedSteps.length} steps are incomplete!`])
@@ -272,6 +274,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                                         if (!step.valid) unvalidatedSteps.push(step)
                                     }
 
+                                    setAlertMode("error")
                                     setShowAlert(true)
                                     if (unvalidatedSteps.length > threshold) {
                                         setAlerts([`${unvalidatedSteps.length} steps are incomplete!`])
@@ -360,7 +363,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                     ))
                 }
             </form>
-            <p className={`text-sm text-rose-600 transition-all duration-300 ease-in-out ${showAlert ? "opacity-100" : "opacity-0"}`}>{alerts.map((alert, i) => <span key={`span${i}`}>{alert} <br /></span>)}</p>
+            <p className={`text-sm ${alertMode == "error" ? "text-rose-600" : "text-green-400"} transition-all duration-300 ease-in-out ${showAlert ? "opacity-100" : "opacity-0"}`}>{alerts.map((alert, i) => <span key={`span${i}`}>{alert} <br /></span>)}</p>
             <div className="flex flex-row mt-auto space-x-2">
                 <button onClick={(e) => {
                     e.target.disabled = true
@@ -370,96 +373,106 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                     let bindingDictionary: any = JSON.parse(localStorage.getItem("bindings") ?? "{}")
                     bindingDictionary[simulation.title] = bindingObject
                     localStorage.setItem("bindings", JSON.stringify(bindingDictionary))
+                    setAlertMode("notification")
+                    setShowAlert(true)
+                    setAlerts(["Saved settings to desktop"])
                     setTimeout(() => {
-                    e.target.disabled = false
-                }, 750)
+                        e.target.disabled = false
+                        setAlerts([])
+                        setShowAlert(false)
+                    }, 1000)
                 }} className="button mt-auto group tooltip-container">
-                <span className="tooltip">Save Settings</span>
-                <FontAwesomeIcon className="text-base" icon={faSave}></FontAwesomeIcon>
-            </button>
-            <button onClick={(e) => {
-                e.target.disabled = true
-                let bindingDictionary: any = JSON.parse(localStorage.getItem("bindings") ?? "{}")
-                delete bindingDictionary[simulation.title]
-                localStorage.setItem("bindings", JSON.stringify(bindingDictionary))
-                updateBindings("*", populateBindings(simulation, {}, true))
-                setTimeout(() => {
-                    e.target.disabled = false
-                }, 750)
-            }} className="button mt-auto group tooltip-container">
-                <span className="tooltip">Reset Settings and Clear Save</span>
-                <FontAwesomeIcon className="text-base" icon={faEraser}></FontAwesomeIcon>
-            </button>
-            <button onClick={(e) => {
-                e.target.disabled = true
-                let fileUploadInput = document.createElement("input")
-                fileUploadInput.type = "file"
-                fileUploadInput.accept = ".json"
-                fileUploadInput.click()
-                fileUploadInput.addEventListener("change", (e) => {
-                    console.log(e.target.files)
-                    let file = e.target.files[0]
-                    if (file) {
-                        const reader = new FileReader()
-                        reader.onload = () => {
-                            let jsonContent = reader.result
-                            console.log("Parsed JSON Content: ", JSON.parse(jsonContent))
-                            let bindings = populateBindings(simulation, JSON.parse(jsonContent))
-                            console.log(bindings)
-                            updateBindings("*", bindings)
+                    <span className="tooltip">Save Settings</span>
+                    <FontAwesomeIcon className="text-base" icon={faSave}></FontAwesomeIcon>
+                </button>
+                <button onClick={(e) => {
+                    e.target.disabled = true
+                    let bindingDictionary: any = JSON.parse(localStorage.getItem("bindings") ?? "{}")
+                    delete bindingDictionary[simulation.title]
+                    localStorage.setItem("bindings", JSON.stringify(bindingDictionary))
+                    updateBindings("*", populateBindings(simulation, {}, true))
+                    setShowAlert("notification")
+                    setShowAlert(true)
+                    setAlerts(["Saved settings to desktop"])
+                    setTimeout(() => {
+                        e.target.disabled = false
+                        setAlerts([])
+                        setShowAlert(false)
+                    }, 1000)
+                }} className="button mt-auto group tooltip-container">
+                    <span className="tooltip">Reset Settings and Clear Save</span>
+                    <FontAwesomeIcon className="text-base" icon={faEraser}></FontAwesomeIcon>
+                </button>
+                <button onClick={(e) => {
+                    e.target.disabled = true
+                    let fileUploadInput = document.createElement("input")
+                    fileUploadInput.type = "file"
+                    fileUploadInput.accept = ".json"
+                    fileUploadInput.click()
+                    fileUploadInput.addEventListener("change", (e) => {
+                        console.log(e.target.files)
+                        let file = e.target.files[0]
+                        if (file) {
+                            const reader = new FileReader()
+                            reader.onload = () => {
+                                let jsonContent = reader.result
+                                console.log("Parsed JSON Content: ", JSON.parse(jsonContent))
+                                let bindings = populateBindings(simulation, JSON.parse(jsonContent))
+                                console.log(bindings)
+                                updateBindings("*", bindings)
+                            }
+                            reader.readAsText(file)
                         }
-                        reader.readAsText(file)
+                    })
+                    e.target.disabled = false
+                }} className="button mt-auto group tooltip-container">
+                    <span className="tooltip">Upload Settings from .JSON</span>
+                    <FontAwesomeIcon className="text-base" icon={faDownload}></FontAwesomeIcon>
+                </button>
+                <button onClick={(e) => {
+                    e.target.disabled = true
+                    let a = document.createElement("a")
+                    let link = new Blob([JSON.stringify(bindings.map((b) => {
+                        return { values: b.values }
+                    }))], { type: "application/json" })
+                    a.href = URL.createObjectURL(link)
+                    let date = new Date()
+                    a.download = `${simulation.title.replaceAll(" ", "_").toLocaleLowerCase()}_settings_${date.toLocaleDateString()}`
+                    a.click()
+                    e.target.disabled = false
+                }} className="button mt-auto group tooltip-container">
+                    <span className="tooltip">Save Settings as .JSON</span>
+                    <FontAwesomeIcon className="text-base" icon={faFile}></FontAwesomeIcon>
+                </button>
+                <div className="flex gap-2 h-min overflow-x-auto mt-auto">
+                    {
+                        currentIndex != 0 &&
+                        <button onClick={() => {
+                            let previousIndex = currentIndex - 1
+                            changeToStep(previousIndex)
+                        }} className="button">
+                            Previous
+                        </button>
                     }
-                })
-                e.target.disabled = false
-            }} className="button mt-auto group tooltip-container">
-                <span className="tooltip">Upload Settings from .JSON</span>
-                <FontAwesomeIcon className="text-base" icon={faDownload}></FontAwesomeIcon>
-            </button>
-            <button onClick={(e) => {
-                e.target.disabled = true
-                let a = document.createElement("a")
-                let link = new Blob([JSON.stringify(bindings.map((b) => {
-                    return { values: b.values }
-                }))], { type: "application/json" })
-                a.href = URL.createObjectURL(link)
-                let date = new Date()
-                a.download = `${simulation.title.replaceAll(" ", "_").toLocaleLowerCase()}_settings_${date.toLocaleDateString()}`
-                a.click()
-                e.target.disabled = false
-            }} className="button mt-auto group tooltip-container">
-                <span className="tooltip">Save Settings as .JSON</span>
-                <FontAwesomeIcon className="text-base" icon={faFile}></FontAwesomeIcon>
-            </button>
-            <div className="flex gap-2 h-min overflow-x-auto mt-auto">
-                {
-                    currentIndex != 0 &&
-                    <button onClick={() => {
-                        let previousIndex = currentIndex - 1
-                        changeToStep(previousIndex)
-                    }} className="button">
-                        Previous
-                    </button>
-                }
-                {
-                    currentIndex != simulation.steps.length - 1 &&
-                    <>
-                        <button onClick={() => {
-                            let nextIndex = currentIndex + 1
-                            changeToStep(nextIndex)
-                        }} className="button">
-                            Next
-                        </button>
-                        <button onClick={() => {
-                            let lastIndex = simulation.steps.length - 1
-                            changeToStep(lastIndex)
-                        }} className="button">
-                            Skip to Last Step
-                        </button>
-                    </>
-                }
+                    {
+                        currentIndex != simulation.steps.length - 1 &&
+                        <>
+                            <button onClick={() => {
+                                let nextIndex = currentIndex + 1
+                                changeToStep(nextIndex)
+                            }} className="button">
+                                Next
+                            </button>
+                            <button onClick={() => {
+                                let lastIndex = simulation.steps.length - 1
+                                changeToStep(lastIndex)
+                            }} className="button">
+                                Skip to Last Step
+                            </button>
+                        </>
+                    }
+                </div>
             </div>
-        </div>
         </div >
     )
 }

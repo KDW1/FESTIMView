@@ -9,54 +9,53 @@ class Backend {
         this.backendDomain = process.env.BACKEND_DOMAIN as string
     }
 
-    async sendPostProcessingRequest(code : string, postprocessing : boolean, filepath : string | null = null) {
+    async sendPostProcessingRequest(code: string, postprocessing: boolean, filepath: string | null = null) {
         console.log("Sending post processing request to execution...")
-        const data = await this.sendRequest("/exec", "POST", { code, postprocessing, filepath })
-        if (!data.error) {
+        try {
+            const data = await this.sendRequest("/exec", "POST", { code, postprocessing, filepath })
             return data
-        } else {
+        } catch (error) {
+            console.log("We encountered an error")
+            console.log(error.message)
             return {
                 success: false,
-                error: data.error
+                error
             }
         }
     }
 
-    async sendZipFileRequest(filepath : string, directory : string) {
-        const data = await this.sendRequest("/download_zip", "POST", { filepath, directory })
-        if(!data.error) {
+    async sendZipFileRequest(filepath: string, directory: string) {
+        try {
+            const data = await this.sendRequest("/download_zip", "POST", { filepath, directory })
             return data
-        } else {
+        } catch (error) {
             return {
-                sucess: false,
-                error: data.error
+                success: false,
+                error
             }
         }
     }
 
     async sendExecRequest(code: string) {
-        console.log("Sending execution request...")
-        const data = await this.sendRequest("/exec", "POST", { code }).then(res => this.convertToJSON(res))
-        if (!data.error) {
+        try {
+            const data = await this.sendRequest("/exec", "POST", { code }).then(res => this.convertToJSON(res))
             return data
-        } else {
+        } catch (error) {
             return {
                 success: false,
-                error: data.error
+                error
             }
         }
     }
 
     async sendEvalRequest(expr: string) {
-        console.log("Sending evaluation request...")
-        console.log("Expression: ", expr)
-        const data = await this.sendRequest("/eval", "POST", { expr }).then(res => this.convertToJSON(res))
-        if (!data.error) {
+        try {
+            const data = await this.sendRequest("/eval", "POST", { expr }).then(res => this.convertToJSON(res))
             return data
-        } else {
+        } catch (error) {
             return {
                 success: false,
-                error: data.error
+                error
             }
         }
     }
@@ -88,17 +87,13 @@ class Backend {
             })
             return res
         } catch (error) {
-            console.log(`Failed to fetch from ${path}, received error: ${error}`)
             if (requestCount < 3) {
                 setTimeout(async () => {
                     return await this.sendRequest(path, method, data, additionalHeaders, requestCount + 1)
                 }, RETRY_TIME_SECONDS * 1000)
             } else {
-                return Response.json({
-                    success: false,
-                    failed: true,
-                    error: "Failed to successfully send request"
-                })
+                console.log(`Failed to fetch from ${path} after three attempts, received error: ${error}`)
+                throw error
             }
         }
     }
@@ -123,13 +118,13 @@ const sendEvalRequest = async (code: string) => {
     return data
 }
 
-const sendPostProcessingRequest = async(code : string, postprocessing : boolean, filepath : string | null = null) => {
+const sendPostProcessingRequest = async (code: string, postprocessing: boolean, filepath: string | null = null) => {
     const backend = await getBackend()
     const data = await backend.sendPostProcessingRequest(code, postprocessing, filepath)
     return data
 }
 
-const sendZipFileRequest = async(filepath : string, directory : string) => {
+const sendZipFileRequest = async (filepath: string, directory: string) => {
     const backend = await getBackend()
     const data = await backend.sendZipFileRequest(filepath, directory)
     return data

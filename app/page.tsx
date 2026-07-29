@@ -410,7 +410,7 @@ export default function Home() {
             const text = decoder.decode(chunk)
             let data = JSON.parse(`[${decoder.decode(chunk).replaceAll("}{", "},{")}]`)
             for (let message of data) {
-              if (!message.error) {
+              if (message.success) {
                 updateArgs([{
                   message: message.output,
                   status: "output"
@@ -426,6 +426,8 @@ export default function Home() {
                     localStorage.setItem("exportWorkingDirectory", message.directory)
                   }
                 }
+              } else {
+                throw Error(message.error)
               }
             }
           }
@@ -438,7 +440,7 @@ export default function Home() {
         }])
       } catch (error) {
         console.log("Error: ", error)
-        const errorMessage = `Something went wrong during post processing...`
+        const errorMessage = `Something went wrong during post processing >:[...`
         updateArgs([{
           message: errorMessage,
           status: "error"
@@ -511,7 +513,13 @@ export default function Home() {
           return null
         }
       } catch (error) {
-
+        console.log("Error: ", error)
+        const errorMessage = `Something went wrong during post processing...`
+        updateArgs([{
+          message: errorMessage,
+          status: "error"
+        }])
+        setProcessingCode(false)
       }
     }
   }

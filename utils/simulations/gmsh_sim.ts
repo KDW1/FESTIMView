@@ -8,20 +8,50 @@ import os
 import gmsh
 
 
-# Initialize the GMSH API
+`,
+  steps: [
+  {
+    title: "Geometries",
+    settings: [
+      {
+        title: "Length",
+        name: "L",
+        type: "number"
+      },
+      {
+        title: "Breadth",
+        name: "B",
+        type: "number"
+      },
+      {
+        title: "Height",
+        name: "H",
+        type: "number"
+      },
+      {
+        title: "Radius",
+        name: "r",
+        type: "number"
+      }
+    ],
+    recipe: `# Initialize the GMSH API
 gmsh.initialize()
 gmsh.model.add("DFG 3D")
 
 # Define geometry parameters (length L, breadth B, height H, cylinder radius r)
-L, B, H, r = 2.5, 0.41, 0.41, 0.05
+L, B, H, r = {*L*}, {*B*}, {*H*}, {*r*}
 
 # Create the main channel as a rectangular box
 channel = gmsh.model.occ.addBox(0, 0, 0, L, B, H)
 
 # Create the obstacle cylinder inside the channel
-cylinder = gmsh.model.occ.addCylinder(0.5, 0, 0.2, 0, B, 0, r)
-
-# Subtract cylinder from channel to get the fluid region
+cylinder = gmsh.model.occ.addCylinder(0.5, 0, 0.2, 0, B, 0, r)`
+  },
+  {
+    title: "GMSH Calculations",
+    description: "These are gmsh calculations which help subtract the cylinder from the box, and setup the proper situtation for the diffusion.",
+    settings: [],
+    recipe: `# Subtract cylinder from channel to get the fluid region
 fluid = gmsh.model.occ.cut([(3, channel)], [(3, cylinder)])
 gmsh.model.occ.synchronize()
 
@@ -119,12 +149,9 @@ cell_tags = mesh_data.cell_tags
 cell_tags.name = "Cell markers"
 
 print(f"Cell tags: {np.unique(cell_tags.values)}")
-print(f"Facet tags: {np.unique(facet_tags.values)}")
-
-import festim as F
-
-#---- The pre-code is everything above ----#`,
-  steps: [
+print(f"Facet tags: {np.unique(facet_tags.values)}")`
+  },
+  
     {
     title: "Problem",
     name: "problem",
@@ -136,11 +163,14 @@ import festim as F
         type: "string"
       }
     ],
-    recipe: "# Create empty problem\n{*problem_variable*}=F.HydrogenTransportProblem()"
+    recipe: `import festim as F
+    
+# Create empty problem\n{*problem_variable*}=F.HydrogenTransportProblem()`
   },
     {
         title: "Mesh",
         name: "mesh",
+        description: "This accesses the mesh variable that we defined in the previous step",
         settings: [],
         recipe: `@problem--{*problem_variable*}@.mesh = F.Mesh(mesh)`
     },
