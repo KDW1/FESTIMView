@@ -15,6 +15,7 @@ from trame.widgets import vuetify3 as v3
 class PostProcessing(TrameApp):
     DEFAULT_FILE_PATH = "out/field_export.bp"
     DEFAULT_COLOR_PRESET = "Fast"
+    DEFAULT_COLOR_BY = "Solid"
     
     file = None
     async def child_receive_msg(self, data):
@@ -31,6 +32,8 @@ class PostProcessing(TrameApp):
                     if self.file and self.ctx.view:
                         self.ctx.view.reset_camera()
                         self.ctx.view.update()
+                    self.state.pv_color_by = self.DEFAULT_COLOR_BY
+                    self.state.pv_color_preset = self.DEFAULT_COLOR_PRESET
                 case "play":
                     await self.play_animation()
                 case "reverse":
@@ -56,17 +59,6 @@ class PostProcessing(TrameApp):
             self.ctx.view.reset_camera()
             self.ctx.view.update()
 
-    # def _resolve_latest_file(self):
-    #     latest_run = read_latest_run_record()
-    #     if latest_run is None:
-    #         return None
-
-    #     vtx_paths = latest_run.get("vtx_paths") or []
-    #     if not vtx_paths and latest_run.get("output_dir"):
-    #         vtx_paths = find_vtx_dirs(Path(latest_run["output_dir"]))
-
-    #     return str(Path(vtx_paths[0]).resolve()) if vtx_paths else None
-
     def _setup_pv(self, file_to_load):
         self.times = []
         self.state.pv_time_idx_max = -1
@@ -82,9 +74,9 @@ class PostProcessing(TrameApp):
         )
 
         if file_to_load:
-            print("Loading file: ", file_to_load)
-            self.load_file(file_to_load, reloading=True)
-            print("Successfully loaded file")
+            print("Loading file (from Paraview setup): ", file_to_load)
+            self.load_file(file_to_load)
+            print("Successfully loaded file (from Paraview setup)")
 
     def _time_controls_width(self, time_count):
         return f"min(calc(100vw - 2rem), calc({max(time_count, 1)} * 5px + 24rem))"
@@ -96,7 +88,7 @@ class PostProcessing(TrameApp):
                 self.representation.Visibility = 0
             return
 
-        if self.reader is None or reloading:
+        if self.reader is None:
             for source in simple.GetSources().values():
                 simple.Delete(source)
             self.reader = simple.ADIOS2VTXReader(FileName=str(file_path))
@@ -175,7 +167,7 @@ class PostProcessing(TrameApp):
         if self.representation is None:
             return
 
-        if pv_color_by is None:
+        if pv_color_by is None or pv_color_by == "Solid":
             self.representation.ColorBy(("POINTS", None))
         else:
             self.representation.ColorBy(pv_color_by.split(":::"))
@@ -251,106 +243,107 @@ class PostProcessing(TrameApp):
                                 ctx_name="view",
                                 style="width: 100%; height: 100%;",
                             )
-                            # with html.Div(
-                            #     style=(
-                            #         "{"
-                            #         " position: 'absolute',"
-                            #         " left: '1rem',"
-                            #         " right: '1rem',"
-                            #         " bottom: '1rem',"
-                            #         " display: 'flex',"
-                            #         " justifyContent: 'center',"
-                            #         " zIndex: 10,"
-                            #         " pointerEvents: 'none'"
-                            #         "}",
-                            #     )
-                            # ):
-                            #     with v3.VCard(
-                            #         elevation=4,
-                            #         style=(
-                            #             "{"
-                            #             " backgroundColor: '#ffffff',"
-                            #             " width: pv_time_controls_width,"
-                            #             " maxWidth: 'calc(100vw - 2rem)',"
-                            #             " pointerEvents: 'auto'"
-                            #             "}",
-                            #         ),
-                            #     ):
-                            #         with v3.VCardText(classes="px-2 py-1"):
-                            #             with html.Div(classes="d-flex align-center ga-0"):
-                            #                 v3.VBtn(
-                            #                     icon="mdi-skip-previous",
-                            #                     variant="plain",
-                            #                     click="pv_time_idx = 0",
-                            #                     density="compact",
-                            #                     disabled=("pv_time_idx <= 0", True),
-                            #                 )
-                            #                 v3.VBtn(
-                            #                     icon="mdi-chevron-left",
-                            #                     variant="plain",
-                            #                     click="pv_time_idx = Math.max(pv_time_idx - 1, 0)",
-                            #                     density="compact",
-                            #                     disabled=("pv_time_idx <= 0", True),
-                            #                 )
-                            #                 v3.VBtn(
-                            #                     icon="mdi-stop",
-                            #                     variant="plain",
-                            #                     click="pv_play=false",
-                            #                     v_if=("pv_play", False),
-                            #                     density="compact",
-                            #                 )
-                            #                 v3.VBtn(
-                            #                     icon="mdi-play",
-                            #                     variant="plain",
-                            #                     click="pv_play=true",
-                            #                     v_else=True,
-                            #                     density="compact",
-                            #                 )
-                            #                 v3.VBtn(
-                            #                     icon="mdi-chevron-right",
-                            #                     variant="plain",
-                            #                     click="pv_time_idx = Math.min(pv_time_idx + 1, pv_time_idx_max)",
-                            #                     density="compact",
-                            #                     disabled=(
-                            #                         "pv_time_idx < 0 || pv_time_idx >= pv_time_idx_max",
-                            #                         True,
-                            #                     ),
-                            #                 )
-                            #                 v3.VBtn(
-                            #                     icon="mdi-skip-next",
-                            #                     variant="plain",
-                            #                     click="pv_time_idx = pv_time_idx_max",
-                            #                     density="compact",
-                            #                     disabled=(
-                            #                         "pv_time_idx < 0 || pv_time_idx >= pv_time_idx_max",
-                            #                         True,
-                            #                     ),
-                            #                 )
-                            #                 with html.Div(classes="flex-grow-1"):
-                            #                     v3.VSlider(
-                            #                         v_model=("pv_time_idx", -1),
-                            #                         min=0,
-                            #                         step=1,
-                            #                         max=("pv_time_idx_max", -1),
-                            #                         hide_details=True,
-                            #                         density="comfortable",
-                            #                         disabled=("pv_time_idx_max < 0", True),
-                            #                         classes="px-2",
-                            #                     )
-                            #                 html.Div(
-                            #                     "{{ pv_time_idx_max >= 0 ? '(' + (pv_time_idx + 1) + ' / ' + (pv_time_idx_max + 1) + ')' : '(0 / 0)' }}",
-                            #                     classes="text-body-2 text-no-wrap pr-2",
-                            #                 )
-                            #                 html.Div(
-                            #                     "t = {{ time_value }}",
-                            #                     classes="text-body-2 text-no-wrap",
-                            #                 )
+                            if self.reader.TimestepValues:
+                                with html.Div(
+                                    style=(
+                                        "{"
+                                        " position: 'absolute',"
+                                        " left: '1rem',"
+                                        " right: '1rem',"
+                                        " bottom: '1rem',"
+                                        " display: 'flex',"
+                                        " justifyContent: 'center',"
+                                        " zIndex: 10,"
+                                        " pointerEvents: 'none'"
+                                        "}",
+                                    )
+                                ):
+                                    with v3.VCard(
+                                        elevation=4,
+                                        style=(
+                                            "{"
+                                            " backgroundColor: '#ffffff',"
+                                            " width: pv_time_controls_width,"
+                                            " maxWidth: 'calc(100vw - 2rem)',"
+                                            " pointerEvents: 'auto'"
+                                            "}",
+                                        ),
+                                    ):
+                                        with v3.VCardText(classes="px-2 py-1"):
+                                            with html.Div(classes="d-flex align-center ga-0"):
+                                                v3.VBtn(
+                                                    icon="mdi-skip-previous",
+                                                    variant="plain",
+                                                    click="pv_time_idx = 0",
+                                                    density="compact",
+                                                    disabled=("pv_time_idx <= 0", True),
+                                                )
+                                                v3.VBtn(
+                                                    icon="mdi-chevron-left",
+                                                    variant="plain",
+                                                    click="pv_time_idx = Math.max(pv_time_idx - 1, 0)",
+                                                    density="compact",
+                                                    disabled=("pv_time_idx <= 0", True),
+                                                )
+                                                v3.VBtn(
+                                                    icon="mdi-stop",
+                                                    variant="plain",
+                                                    click="pv_play=false",
+                                                    v_if=("pv_play", False),
+                                                    density="compact",
+                                                )
+                                                v3.VBtn(
+                                                    icon="mdi-play",
+                                                    variant="plain",
+                                                    click="pv_play=true",
+                                                    v_else=True,
+                                                    density="compact",
+                                                )
+                                                v3.VBtn(
+                                                    icon="mdi-chevron-right",
+                                                    variant="plain",
+                                                    click="pv_time_idx = Math.min(pv_time_idx + 1, pv_time_idx_max)",
+                                                    density="compact",
+                                                    disabled=(
+                                                        "pv_time_idx < 0 || pv_time_idx >= pv_time_idx_max",
+                                                        True,
+                                                    ),
+                                                )
+                                                v3.VBtn(
+                                                    icon="mdi-skip-next",
+                                                    variant="plain",
+                                                    click="pv_time_idx = pv_time_idx_max",
+                                                    density="compact",
+                                                    disabled=(
+                                                        "pv_time_idx < 0 || pv_time_idx >= pv_time_idx_max",
+                                                        True,
+                                                    ),
+                                                )
+                                                with html.Div(classes="flex-grow-1"):
+                                                    v3.VSlider(
+                                                        v_model=("pv_time_idx", -1),
+                                                        min=0,
+                                                        step=1,
+                                                        max=("pv_time_idx_max", -1),
+                                                        hide_details=True,
+                                                        density="comfortable",
+                                                        disabled=("pv_time_idx_max < 0", True),
+                                                        classes="px-2",
+                                                    )
+                                                html.Div(
+                                                    "{{ pv_time_idx_max >= 0 ? '(' + (pv_time_idx + 1) + ' / ' + (pv_time_idx_max + 1) + ')' : '(0 / 0)' }}",
+                                                    classes="text-body-2 text-no-wrap pr-2",
+                                                )
+                                                html.Div(
+                                                    "t = {{ time_value }}",
+                                                    classes="text-body-2 text-no-wrap",
+                                                )
 
                 with self.ui.toolbar.clear() as toolbar:
                     toolbar.density = "comfortable"
                     v3.VSelect(
                         label="Color By",
-                        v_model=("pv_color_by", None),
+                        v_model=("pv_color_by", "Solid"),
                         items=("pv_color_options", []),
                         density="compact",
                         hide_details=True,

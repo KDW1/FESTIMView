@@ -72,7 +72,7 @@ function InputList({ processingCode, setting, list, bindings, updateBindings, cu
                     )
                 case "boolean":
                     return (
-                        <input required={true} checked={getBindingOfSetting(setting) ?? ""} value={getBindingOfSetting(classSetting) ?? ""} key={`item${classSetting.title}${currentIndex}`} onChange={(e) => eventHandler(e, classSetting)} className="mr-auto w-4 h-auto" type="checkbox" name="" id="" />
+                        <input required={true} checked={(getBindingOfSetting(setting) == "True" ? true : false )} value={getBindingOfSetting(classSetting) ?? ""} key={`item${classSetting.title}${currentIndex}`} onChange={(e) => eventHandler(e, classSetting)} className="mr-auto w-4 h-auto" type="checkbox" name="" id="" />
                     )
                 case "enum":
                     return (
@@ -152,13 +152,10 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
     // FESTIM API Reference for FESTIM classes
     // https://festim.readthedocs.io/en/latest/api/index.html
     const [currentStep, setCurrentStep] = useState(simulation.steps[currentIndex])
-    const [selectingStep, setSelectingStep] = useState(false)
     const [alerts, setAlerts] = useState([""])
     const [alertMode, setAlertMode] = useState("error")
     const [showAlert, setShowAlert] = useState(false)
-
-    const stepNames = simulation.steps.map(s => s.title)
-
+    
     const validityCheck = (bindings: Binding[]) => {
         console.log("Bindings: ", bindings)
         let stepsArray = bindings.map(b => ({
@@ -205,7 +202,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                     )
                 case "boolean":
                     return (
-                        <input required={true} checked={getBindingOfSetting(setting) ?? ""} value={getBindingOfSetting(setting) ?? ""} key={`${prefix}${setting.title}${currentIndex}${suffix}`} onChange={(e) => eventHandler(e, setting)} className="mr-auto w-4 h-auto" type="checkbox" name="" id="" />
+                        <input required={true} checked={(getBindingOfSetting(setting) == "True" ? true : false )} value={getBindingOfSetting(setting) ?? ""} key={`${prefix}${setting.title}${currentIndex}${suffix}`} onChange={(e) => eventHandler(e, setting)} className="mr-auto w-4 h-auto" type="checkbox" name="" id="" />
                     )
                 case "enum":
                     return (
@@ -262,7 +259,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                                     if (downloadURL) {
                                         let link = document.createElement("a")
                                         link.href = downloadURL
-                                        link.download = "paraview_exports.zip"
+                                        link.download = `paraview_${simulation.title.toLowerCase().replaceAll(" ", "_")}_exports_${(new Date()).toLocaleDateString()}.zip`
                                         link.click()
                                         link.remove()
                                     }
@@ -329,24 +326,23 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
         setCurrentStep(simulation.steps[currentIndex])
     }, [currentIndex, simulation])
     return (
-        <div className="text-primary h-4/5 overflow-y-auto flex flex-1 gap-2 flex-col text-base">
-            {
-                selectingStep ?
-                    <select value={stepNames[currentIndex]} onChange={(e) => {
-                        let selectIndex = stepNames.indexOf(e.target.value)
-                        changeToStep(selectIndex)
-                    }} name="" id="" className="select-container">
-                        {stepNames.map(step => (
-                            <option key={`stepOption${step}`} value={step} className="select-option">{step}</option>
-                        ))}
-                    </select> :
-                    <p onDoubleClick={(e) => {
-                        setSelectingStep(true)
-                    }} className="group">
+        <div className="flex flex-row flex-1 gap-2 h-4/5">
+        <div className="w-1/5 flex flex-col">
+        <p className="text-base text-primary font-bold">Simulation Steps</p>
+        <div className="bg-lightbg h-full p-2 flex flex-col rounded">
+
+        {simulation.steps.map((step, i) => (
+            <button key={`menuButton${i}`} onClick={()=>{
+                changeToStep(i)
+            }} className={`text-sm ${i == currentIndex ? "text-blue-900 font-semibold" : "text-blue-400"} duration-300 ease-in-out hover:translate-x-2 text-start cursor-pointer`}>{step.title}</button>
+        ))}
+        </div>
+        </div>
+        <div className="text-primary h-full flex flex-1 gap-2 flex-col text-base">
+                    <p className="group">
                         <span className="font-semibold cursor-pointer">{currentStep.title}</span>
                         <span className="opacity-0 group-hover:opacity-100 text-xs duration-300 ease-in-out transition-all"> double click to select a step</span>
                     </p>
-            }
             {currentStep.description && <p className="italic text-xs mb-2">{currentStep.description}</p>}
             <form id="formStep" className="gap-4 min-h-20 flex-col flex flex-1 overflow-y-auto pr-2">
                 {
@@ -437,7 +433,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                     }))], { type: "application/json" })
                     a.href = URL.createObjectURL(link)
                     let date = new Date()
-                    a.download = `${simulation.title.replaceAll(" ", "_").toLocaleLowerCase()}_settings_${date.toLocaleDateString()}`
+                    a.download = `${simulation.title.toLowerCase().replaceAll(" ", "_").toLocaleLowerCase()}_settings_${date.toLocaleDateString()}`
                     a.click()
                     e.target.disabled = false
                 }} className="button mt-auto group tooltip-container">
@@ -474,5 +470,6 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                 </div>
             </div>
         </div >
+        </div>
     )
 }
