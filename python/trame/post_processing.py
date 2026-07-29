@@ -47,6 +47,12 @@ class PostProcessing(TrameApp):
     
     def __init__(self, server=None, template_name="post-processing"):
         super().__init__(server)
+        self.server.cli.add_argument("--data", help="Path to file of interest", dest="data")
+        args, _ = self.server.cli.parse_known_args()
+        if args.data:
+            filepath = str(Path(args.data).resolve().absolute())
+            print("Filepath argument: ", filepath)
+            self.file = filepath
 
         pvw.initialize(self.server)
         v3.initialize(self.server)
@@ -390,6 +396,12 @@ class PostProcessing(TrameApp):
                         v3.VBtn(
                             icon="mdi-crop-free",
                             click=self.ctx.view.reset_camera,
+                            classes="rounded",
+                            density="compact",
+                        )
+                        v3.VBtn(
+                            icon="mdi-chart-line",
+                            click=self.plot_over_line,
                             classes="rounded",
                             density="compact",
                         )
