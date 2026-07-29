@@ -6,7 +6,7 @@
 
 # dependencies
 /gmsh
-/python/festim_example/
+/python/festim/
 /paraview
 /node_modules
 /.pnp

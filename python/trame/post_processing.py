@@ -47,12 +47,16 @@ class PostProcessing(TrameApp):
     
     def __init__(self, server=None, template_name="post-processing"):
         super().__init__(server)
+        self.pv_views = {}
+        self.active_view = None
+        
         self.server.cli.add_argument("--data", help="Path to file of interest", dest="data")
         args, _ = self.server.cli.parse_known_args()
         if args.data:
             filepath = str(Path(args.data).resolve().absolute())
             print("Filepath argument: ", filepath)
             self.file = filepath
+            self._setup_pv(self.file)
 
         pvw.initialize(self.server)
         v3.initialize(self.server)
@@ -74,6 +78,8 @@ class PostProcessing(TrameApp):
         self.reader = None
         self.representation = None
         self.view = simple.GetActiveViewOrCreate("RenderView")
+        self.pv_views["3d_view"] = self.view
+        self.active_view = "3d_view"
         self.view.Set(
             OrientationAxesVisibility=1,
             Background=[0.12, 0.12, 0.12],
@@ -155,6 +161,50 @@ class PostProcessing(TrameApp):
     def reset_color_range(self):
         self.representation.RescaleTransferFunctionToDataRange(True, False)
         self.ctx.view.update()
+    
+    def plot_over_line(self):
+        print("Preparing to plot over line yahoo")
+        for name, proxy_id in simple.GetSources():
+            source = simple.FindSource(name)
+            plotOverLine = simple.PlotOverLine(registrationName="PlotOverLine", Input=source)
+            print(f"Point 1 is at {plotOverLine.Point1} and Point 2 is at {plotOverLine.Point2}")
+            simple.SetActiveSource(plotOverLine)
+            simple.Show(plotOverLine, self.view, "GeometryRepresentation")
+            
+            line_chart_view = simple.CreateView('XYChartView')
+            layout = simple.GetLayoutByName("Layout #1")
+            simple.AssignViewToLayout(view=self.view, layout=layout, hint=0)
+            layout.SetSize(963, 483)
+            line_chart_view.Update()
+            simple.Show(plotOverLine, line_chart_view, "XYChartRepresentation")
+            self.pv_views["line_chart_view"] = line_chart_view
+            
+            # Failed split_view_code
+            # split_view_layout = simple.CreateLayout(name="Split Tabs View")
+            # split_view_layout.SplitHorizontal(0, 0.5)
+            # simple.AssignViewToLayout(view=self.pv_views["3d_view"], layout=split_view_layout, hint=0)
+            # simple.AssignViewToLayout(view=line_chart_view, layout=split_view_layout, hint=1)
+            # # simple.SetActiveLayout(split_view_layout)
+            # print("Our split view layout is: ", split_view_layout)
+            self.most_recent_plot = plotOverLine
+            self.view = self.pv_views["line_chart_view"]
+            self.active_view = "line_chart_view"
+            self._build_ui()
+        
+        if self.ctx.view:
+            self.ctx.view.update()
+    
+    def return_to_3d(self):
+        if self.most_recent_plot:
+            simple.Delete(self.most_recent_plot)
+            del self.most_recent_plot
+            
+        self.view = self.pv_views["3d_view"]
+        self.active_view = "3d_view"
+        self._build_ui()
+        
+        if self.ctx.view:
+            self.ctx.view.update()
 
     @change("pv_time_idx")
     def _on_time_change(self, pv_time_idx, **_):
@@ -220,7 +270,7 @@ class PostProcessing(TrameApp):
                     self.state.pv_time_idx = 0
             await asyncio.sleep(0.1)
 
-    def _build_ui(self, template_name):
+    def _build_ui(self, template_name="main"):
         self.state.time_value = ""
         if self.file:
             with SinglePageLayout(
@@ -399,12 +449,20 @@ class PostProcessing(TrameApp):
                             classes="rounded",
                             density="compact",
                         )
-                        v3.VBtn(
-                            icon="mdi-chart-line",
-                            click=self.plot_over_line,
-                            classes="rounded",
-                            density="compact",
-                        )
+                        if self.active_view == "3d_view":
+                            v3.VBtn(
+                                icon="mdi-chart-line",
+                                click=self.plot_over_line,
+                                classes="rounded",
+                                density="compact",
+                            )
+                        else:
+                            v3.VBtn(
+                                icon="mdi-axis-arrow",
+                                click=self.return_to_3d,
+                                classes="rounded",
+                                density="compact",
+                            )
         else:
             with SinglePageLayout(self.server) as self.ui:
                         comm = iframe.Communicator(
