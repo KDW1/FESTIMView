@@ -440,7 +440,7 @@ export default function Home() {
         }])
       } catch (error) {
         console.log("Error: ", error)
-        const errorMessage = `Something went wrong during post processing >:[...`
+        const errorMessage = `Something went wrong during our post processing fetch request >:[...`
         updateArgs([{
           message: errorMessage,
           status: "error"

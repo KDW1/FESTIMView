@@ -155,7 +155,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
     const [alerts, setAlerts] = useState([""])
     const [alertMode, setAlertMode] = useState("error")
     const [showAlert, setShowAlert] = useState(false)
-    
+
     const validityCheck = (bindings: Binding[]) => {
         console.log("Bindings: ", bindings)
         let stepsArray = bindings.map(b => ({
@@ -319,7 +319,6 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
     const changeToStep = (stepIndex: number) => {
         setCurrentIndex(stepIndex)
         setCurrentStep(simulation.steps[stepIndex])
-        setSelectingStep(false)
     }
 
     useEffect(() => {
