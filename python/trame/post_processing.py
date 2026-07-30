@@ -163,7 +163,6 @@ class PostProcessing(TrameApp):
         self.ctx.view.update()
     
     def plot_over_line(self):
-        print("Preparing to plot over line yahoo")
         for name, proxy_id in simple.GetSources():
             source = simple.FindSource(name)
             plotOverLine = simple.PlotOverLine(registrationName="PlotOverLine", Input=source)
