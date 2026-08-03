@@ -10,7 +10,7 @@
 @theme {
   --color-disabled: oklch(92.9% 0.013 255.508); /* bg-gray-200 */
   --color-lightbg: oklch(93.2% 0.032 255.585); /* bg-blue-100*/
-  --color-primarybg: oklch(80.9% 0.105 251.813); /* bg-blue-300 */
+  --color-primarybg: #8ec5ff; /* bg-blue-300 */
   --color-primary: #1A4848;
   --color-lightprimary: #468a8a;
 }

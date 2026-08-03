@@ -6,3 +6,7 @@ trame-vtk
 vtk
 flask
 dotenv
+trame-plotly 
+plotly 
+pandas 
+jupyterlab

@@ -10,7 +10,7 @@
     "start:all": "concurrently \"npm run start:trame\" \"npm run start:backend\" \"npm run dev\"",
     "start:without_trame": "concurrently \"npm run dev\" \"npm run start:backend\"",
     "start:backend": "conda run -n pv-env python python/backend.py",
-    "start:trame": "~/paraview/bin/pvpython --venv .pvenv python/trame/post_processing.py --server --host 0.0.0.0 --port 8080",
+    "start:trame": "~/paraview/bin/pvpython --venv .pvenv python/trame/post_processing.py --server --host 0.0.0.0 --port 8080 --data out/mesh.bp",
     "start": "next start",
     "lint": "eslint"
   },

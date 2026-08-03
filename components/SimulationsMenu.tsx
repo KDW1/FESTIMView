@@ -17,7 +17,7 @@ export default function SimulationsMenu({simulations, simulationsMenuVisible, se
             <div className="overflow-y-auto py-4 w-full grid grid-cols-4 gap-2">
               {
                 simulations.map((sim, i) => (
-                  <div onClick={() => selectSimulation(sim)} key={`simulation${i}`} className="group h-full hover:-translate-y-2 ease-in-out duration-300 cursor-pointer flex flex-col px-2 py-2 space-y-2 rounded-sm bg-lightbg">
+                  <div onClick={() => selectSimulation(sim)} key={`simulation${i}`} className="group h-96 hover:-translate-y-2 ease-in-out duration-300 cursor-pointer flex flex-col px-2 py-2 space-y-2 rounded-sm bg-lightbg">
                     <p className="text-base text-primary font-semibold">{sim.title}</p>
                     <p className="text-sm text-primary h-1/3 overflow-y-auto pr-2">{sim.description}</p>
                     {sim.imageUrl && <div className="mt-auto space-y-2 p-3 bg-blue-200 rounded">

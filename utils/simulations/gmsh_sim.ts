@@ -9,6 +9,8 @@ import gmsh
 
 
 `,
+imageUrl: "/GMSH Example.png",
+imageCaption: "Post processing view of a Viridis coloring of a Hydrogen problem on an example mesh containing a box with a cylindrical cavity",
   steps: [
   {
     title: "Geometries",

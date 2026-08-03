@@ -11,6 +11,12 @@ from trame.ui.vuetify3 import SinglePageLayout
 from trame.widgets import html, iframe, client
 from trame.widgets import paraview as pvw
 from trame.widgets import vuetify3 as v3
+from trame.widgets import plotly
+
+import plotly.express as px
+import plotly.graph_objects as go
+
+from paraview.numpy_support import vtk_to_numpy
 
 class PostProcessing(TrameApp):
     DEFAULT_FILE_PATH = "out/field_export.bp"
@@ -49,9 +55,12 @@ class PostProcessing(TrameApp):
         super().__init__(server)
         self.pv_views = {}
         self.active_view = None
+        self.using_plotly = False
         
+        # This data argument is for debugging purposes so that you can directly pass in a file
         self.server.cli.add_argument("--data", help="Path to file of interest", dest="data")
         args, _ = self.server.cli.parse_known_args()
+        
         if args.data:
             filepath = str(Path(args.data).resolve().absolute())
             print("Filepath argument: ", filepath)
@@ -162,33 +171,66 @@ class PostProcessing(TrameApp):
         self.representation.RescaleTransferFunctionToDataRange(True, False)
         self.ctx.view.update()
     
-    def plot_over_line(self):
+    def update_plotly(self):
+        self.using_plotly = True
+        plot_data = simple.servermanager.Fetch(simple.GetActiveSource())
+        excluded_fields = ["vtkValidPointMask", "arc_length", ""]
+        scatter_data_fields = []
+        scatter_data_arrays = []
+        for point_data in self.plot_over_line.GetPointDataInformation():
+            if point_data is None or not point_data.GetName():
+                continue
+            array_name = point_data.GetName()
+            data_array = plot_data.GetPointData().GetArray(array_name)
+            if array_name not in excluded_fields:
+                # print(f"Viewing data array {array_name}")
+                # print(data_array)
+                out = vtk_to_numpy(data_array)
+                scatter_data_fields.append(array_name)
+                scatter_data_arrays.append(go.Scatter(y=out, x=list(range(len(out))),name=array_name))
+                # print(out)
+                # print(len(out))
+        configured_plot = go.Figure(
+            data=scatter_data_arrays,
+        )
+        configured_plot.update_layout(showlegend=True)
+        self.most_recent_plot = self.plot_over_line
+        self.active_view = "line_chart_view"
+        self._build_ui()
+        self.ctx.plotly_display.update(configured_plot)
+        
+    def prepare_plot_over_line(self):
         for name, proxy_id in simple.GetSources():
             source = simple.FindSource(name)
-            plotOverLine = simple.PlotOverLine(registrationName="PlotOverLine", Input=source)
-            print(f"Point 1 is at {plotOverLine.Point1} and Point 2 is at {plotOverLine.Point2}")
-            simple.SetActiveSource(plotOverLine)
-            simple.Show(plotOverLine, self.view, "GeometryRepresentation")
+            plot_over_line = simple.PlotOverLine(registrationName="PlotOverLine", Input=source)
+            self.plot_over_line = plot_over_line
+            print(f"Point 1 is at {self.plot_over_line.Point1} and Point 2 is at {self.plot_over_line.Point2}")
             
-            line_chart_view = simple.CreateView('XYChartView')
-            layout = simple.GetLayoutByName("Layout #1")
-            simple.AssignViewToLayout(view=self.view, layout=layout, hint=0)
-            layout.SetSize(963, 483)
-            line_chart_view.Update()
-            simple.Show(plotOverLine, line_chart_view, "XYChartRepresentation")
-            self.pv_views["line_chart_view"] = line_chart_view
+            # The following code doesn't work unless we use vtkRemoteView
+            simple.SetActiveSource(self.plot_over_line)
+            # simple.Show(self.plot_over_line, self.view, "GeometryRepresentation")
+
+            # print("Made plot over line geometry representation")
+            self.update_plotly()
+            # line_chart_view = simple.CreateView('XYChartView')
+            # print("Line Chart View (of interest): ", line_chart_view)
+            # print(line_chart_view.GetChart())
+            # layout = simple.GetLayoutByName("Layout #1")
+            # simple.AssignViewToLayout(view=self.view, layout=layout, hint=0)
+            # print("Assigned view to layout")
+            # layout.SetSize(963, 483)
+            # line_chart_view.Update()
+            # simple.Show(plotOverLine, line_chart_view, "XYChartRepresentation")
+            # print("Showing the XYChartRepresentation")
+            # print(simple.GetD)
+            # self.pv_views["line_chart_view"] = line_chart_view
             
-            # Failed split_view_code
-            # split_view_layout = simple.CreateLayout(name="Split Tabs View")
-            # split_view_layout.SplitHorizontal(0, 0.5)
-            # simple.AssignViewToLayout(view=self.pv_views["3d_view"], layout=split_view_layout, hint=0)
-            # simple.AssignViewToLayout(view=line_chart_view, layout=split_view_layout, hint=1)
-            # # simple.SetActiveLayout(split_view_layout)
-            # print("Our split view layout is: ", split_view_layout)
-            self.most_recent_plot = plotOverLine
-            self.view = self.pv_views["line_chart_view"]
-            self.active_view = "line_chart_view"
-            self._build_ui()
+            # self.most_recent_plot = plotOverLine
+            # print("Setting the chart in our didctionary of views")
+            # self.view = self.pv_views["line_chart_view"]
+            
+            # # Plotly alternative follows
+            # print("Line Chart View: ", line_chart_view)
         
         if self.ctx.view:
             self.ctx.view.update()
@@ -209,7 +251,8 @@ class PostProcessing(TrameApp):
     def _on_time_change(self, pv_time_idx, **_):
         if not self.times:
             return
-
+        if self.using_plotly:
+            self.update_plotly()
         if pv_time_idx < len(self.times):
             time_value = self.times[pv_time_idx]
             self.state.time_value = f"{time_value:.3f}"
@@ -292,12 +335,19 @@ class PostProcessing(TrameApp):
                         with html.Div(
                             style="position: relative; width: 100%; height: 100%;"
                         ):
-                            pvw.VtkRemoteView(
-                                self.view,
-                                interactive_ratio=1,
-                                ctx_name="view",
-                                style="width: 100%; height: 100%;",
-                            )
+                            if self.active_view == "3d_view":
+                                pvw.VtkLocalView(
+                                    self.view,
+                                    interactive_ratio=1,
+                                    ctx_name="view",
+                                    style="width: 100%; height: 100%;",
+                                )
+                                with html.Div(
+                                    style="width:0px; height:0px"
+                                ):
+                                    plotly.Figure(ctx_name="plotly_display", display_logo=False, display_mode_bar="False")
+                            else:
+                                plotly.Figure(ctx_name="plotly_display", display_logo=False, display_mode_bar="False")
                             if self.reader.TimestepValues:
                                 with html.Div(
                                     style=(
@@ -451,7 +501,7 @@ class PostProcessing(TrameApp):
                         if self.active_view == "3d_view":
                             v3.VBtn(
                                 icon="mdi-chart-line",
-                                click=self.plot_over_line,
+                                click=self.prepare_plot_over_line,
                                 classes="rounded",
                                 density="compact",
                             )
