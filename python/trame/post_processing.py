@@ -202,6 +202,24 @@ class PostProcessing(TrameApp):
         self.active_view = "line_chart_view"
         self._build_ui()
         self.ctx.plotly_display.update(configured_plot)
+    
+    def update_view_with_plot(self):
+        line_chart_view = simple.CreateView('XYChartView')
+        print("Line Chart View (of interest): ", line_chart_view)
+        print(line_chart_view.GetChart())
+        layout = simple.GetLayoutByName("Layout #1")
+        simple.AssignViewToLayout(view=self.view, layout=layout, hint=0)
+        print("Assigned view to layout")
+        layout.SetSize(963, 483)
+        line_chart_view.Update()
+        simple.Show(self.plot_over_line, line_chart_view, "XYChartRepresentation")
+        print("Showing the XYChartRepresentation")
+        print(simple.GetD)
+        self.pv_views["line_chart_view"] = line_chart_view
+        
+        self.most_recent_plot = self.plot_over_line
+        print("Setting the chart in our didctionary of views")
+        self.view = self.pv_views["line_chart_view"]
         
     def prepare_plot_over_line(self):
         if self.most_recent_plot:
@@ -212,31 +230,10 @@ class PostProcessing(TrameApp):
             plot_over_line = simple.PlotOverLine(registrationName="PlotOverLine", Input=source)
             self.plot_over_line = plot_over_line
             
-            # The following code doesn't work unless we use vtkRemoteView
             simple.SetActiveSource(self.plot_over_line)
-            # simple.Show(self.plot_over_line, self.view, "GeometryRepresentation")
+            simple.Show(self.plot_over_line, self.view, "GeometryRepresentation")
 
-            # print("Made plot over line geometry representation")
             self.update_plotly()
-            # line_chart_view = simple.CreateView('XYChartView')
-            # print("Line Chart View (of interest): ", line_chart_view)
-            # print(line_chart_view.GetChart())
-            # layout = simple.GetLayoutByName("Layout #1")
-            # simple.AssignViewToLayout(view=self.view, layout=layout, hint=0)
-            # print("Assigned view to layout")
-            # layout.SetSize(963, 483)
-            # line_chart_view.Update()
-            # simple.Show(plotOverLine, line_chart_view, "XYChartRepresentation")
-            # print("Showing the XYChartRepresentation")
-            # print(simple.GetD)
-            # self.pv_views["line_chart_view"] = line_chart_view
-            
-            # self.most_recent_plot = plotOverLine
-            # print("Setting the chart in our didctionary of views")
-            # self.view = self.pv_views["line_chart_view"]
-            
-            # # Plotly alternative follows
-            # print("Line Chart View: ", line_chart_view)
         
         if self.ctx.view:
             self.ctx.view.update()
