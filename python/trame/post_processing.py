@@ -56,6 +56,7 @@ class PostProcessing(TrameApp):
         self.pv_views = {}
         self.active_view = None
         self.using_plotly = False
+        self.most_recent_plot = None
         
         # This data argument is for debugging purposes so that you can directly pass in a file
         self.server.cli.add_argument("--data", help="Path to file of interest", dest="data")
@@ -174,10 +175,13 @@ class PostProcessing(TrameApp):
     def update_plotly(self):
         self.using_plotly = True
         plot_data = simple.servermanager.Fetch(simple.GetActiveSource())
-        excluded_fields = ["vtkValidPointMask", "arc_length", ""]
+        excluded_fields = ["vtkValidPointMask", "arc_length"]
         scatter_data_fields = []
         scatter_data_arrays = []
-        for point_data in self.plot_over_line.GetPointDataInformation():
+        current_source = self.plot_over_line
+        if self.times:
+            current_time_idx = self.state.pv_time_idx
+        for point_data in current_source.GetPointDataInformation():
             if point_data is None or not point_data.GetName():
                 continue
             array_name = point_data.GetName()
@@ -200,11 +204,13 @@ class PostProcessing(TrameApp):
         self.ctx.plotly_display.update(configured_plot)
         
     def prepare_plot_over_line(self):
+        if self.most_recent_plot:
+            simple.Delete(self.most_recent_plot)
+            del self.most_recent_plot
         for name, proxy_id in simple.GetSources():
             source = simple.FindSource(name)
             plot_over_line = simple.PlotOverLine(registrationName="PlotOverLine", Input=source)
             self.plot_over_line = plot_over_line
-            print(f"Point 1 is at {self.plot_over_line.Point1} and Point 2 is at {self.plot_over_line.Point2}")
             
             # The following code doesn't work unless we use vtkRemoteView
             simple.SetActiveSource(self.plot_over_line)
@@ -251,8 +257,8 @@ class PostProcessing(TrameApp):
     def _on_time_change(self, pv_time_idx, **_):
         if not self.times:
             return
-        if self.using_plotly:
-            self.update_plotly()
+        if self.using_plotly and self.active_view=="line_chart_view":
+            self.prepare_plot_over_line()
         if pv_time_idx < len(self.times):
             time_value = self.times[pv_time_idx]
             self.state.time_value = f"{time_value:.3f}"
@@ -518,6 +524,7 @@ class PostProcessing(TrameApp):
                             event_names=["parent_to_child"],
                             parent_to_child=(self.child_receive_msg, "[$event]"),
                         )
+                        plotly.initialize(self.server)
                         self.ctrl.child_post_message = comm.post_message
                         
                         self.ui.icon.click = self.ctrl.view_reset_camera
