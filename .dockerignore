@@ -1,0 +1,15 @@
+# Ignore dependencies
+node_modules/
+.env
+
+# Ignore git and local IDE configs
+.git/
+.idea/
+.vscode/
+
+# Ignore logs and build outputs
+/python/festim/
+/python/trame/data/
+/python/__pycache__/
+*.log
+.next

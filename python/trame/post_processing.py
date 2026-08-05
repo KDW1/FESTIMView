@@ -55,7 +55,7 @@ class PostProcessing(TrameApp):
         super().__init__(server)
         self.pv_views = {}
         self.active_view = None
-        self.using_plotly = False
+        self.using_plotly = True
         self.most_recent_plot = None
         
         # This data argument is for debugging purposes so that you can directly pass in a file
@@ -206,7 +206,6 @@ class PostProcessing(TrameApp):
     def update_view_with_plot(self):
         line_chart_view = simple.CreateView('XYChartView')
         print("Line Chart View (of interest): ", line_chart_view)
-        print(line_chart_view.GetChart())
         layout = simple.GetLayoutByName("Layout #1")
         simple.AssignViewToLayout(view=self.view, layout=layout, hint=0)
         print("Assigned view to layout")
@@ -214,17 +213,19 @@ class PostProcessing(TrameApp):
         line_chart_view.Update()
         simple.Show(self.plot_over_line, line_chart_view, "XYChartRepresentation")
         print("Showing the XYChartRepresentation")
-        print(simple.GetD)
         self.pv_views["line_chart_view"] = line_chart_view
         
         self.most_recent_plot = self.plot_over_line
         print("Setting the chart in our didctionary of views")
         self.view = self.pv_views["line_chart_view"]
+        self.most_recent_plot = self.plot_over_line
+        self.active_view = "line_chart_view"
+        self._build_ui()
         
     def prepare_plot_over_line(self):
         if self.most_recent_plot:
             simple.Delete(self.most_recent_plot)
-            del self.most_recent_plot
+            self.most_recent_plot = None
         for name, proxy_id in simple.GetSources():
             source = simple.FindSource(name)
             plot_over_line = simple.PlotOverLine(registrationName="PlotOverLine", Input=source)
@@ -233,7 +234,10 @@ class PostProcessing(TrameApp):
             simple.SetActiveSource(self.plot_over_line)
             simple.Show(self.plot_over_line, self.view, "GeometryRepresentation")
 
-            self.update_plotly()
+            if self.using_plotly:
+                self.update_plotly()
+            else:
+                self.update_view_with_plot()
         
         if self.ctx.view:
             self.ctx.view.update()
@@ -241,7 +245,7 @@ class PostProcessing(TrameApp):
     def return_to_3d(self):
         if self.most_recent_plot:
             simple.Delete(self.most_recent_plot)
-            del self.most_recent_plot
+            self.most_recent_plot = None
             
         self.view = self.pv_views["3d_view"]
         self.active_view = "3d_view"
@@ -338,7 +342,7 @@ class PostProcessing(TrameApp):
                         with html.Div(
                             style="position: relative; width: 100%; height: 100%;"
                         ):
-                            if self.active_view == "3d_view":
+                            if self.active_view == "3d_view" or not self.using_plotly:
                                 pvw.VtkLocalView(
                                     self.view,
                                     interactive_ratio=1,
@@ -350,7 +354,8 @@ class PostProcessing(TrameApp):
                                 ):
                                     plotly.Figure(ctx_name="plotly_display", display_logo=False, display_mode_bar="False")
                             else:
-                                plotly.Figure(ctx_name="plotly_display", display_logo=False, display_mode_bar="False")
+                                with html.Div(style="height:90%; width:100%;"):
+                                    plotly.Figure(ctx_name="plotly_display", display_logo=False, display_mode_bar="False")
                             if self.reader.TimestepValues:
                                 with html.Div(
                                     style=(

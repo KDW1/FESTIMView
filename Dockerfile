@@ -1,15 +1,19 @@
 # syntax=docker/dockerfile:1
-FROM ubuntu
-FROM python:3.12-slim-trixie
-FROM node:trixie-slim
+FROM node
+FROM kitware/trame:conda-glvnd
 
+# Set Python and Vue versions
+ENV TRAME_PYTHON=3.12
+ENV TRAME_CLIENT_TYPE=vue3
+
+# Set web application environment variables
 ENV FLASK_PORT=8000
 ENV PRODUCTION=false
 ENV BACKEND_DOMAIN=http://localhost:8000
 ENV TRAME_DOMAIN=http://localhost:8080
 
 # # Install wget
-RUN  apt-get update \
+RUN apt-get update \
   && apt-get install -y wget \
   && rm -rf /var/lib/apt/lists/*
 
@@ -22,21 +26,34 @@ RUN mkdir -p ~/paraview \
 # Expose Trame port
 EXPOSE 8080
 
-# # Setting up the ANACONDA environment
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpciaccess0 \
+    libgl1 \
+    libegl1 \
+    libx11-6 \
+    libxext6 \
+    libxrender1 \
+    libxcb1 \
+    libxkbcommon-x11-0 \
+    libdbus-1-3 \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV FESTIM_GUI_PYTHON=/opt/trame/festim-env/bin/python
+# Setting up the ANACONDA environment
 # Download Miniconda installer
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh 
-RUN bash /tmp/miniconda.sh -b -p /opt/miniconda
+# RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh 
+# RUN bash /tmp/miniconda.sh -b -p /opt/miniconda
 
-# Update the PATH environment variable
-ENV PATH=/opt/miniconda/bin:$PATH
+# # Update the PATH environment variable
+# ENV PATH=/opt/miniconda/bin:$PATH
 
-# Clean up installer
-RUN rm /tmp/miniconda.sh
+# # Clean up installer
+# RUN rm /tmp/miniconda.sh
 
 RUN conda tos accept \ 
     && conda update -n base -c defaults conda \
     && conda create -n pv-env python=3.12 \
-    && conda install -n pv-env -c conda-forge numpy flask festim python-gmsh gmsh python-dotenv
+    && conda install -n pv-env -c conda-forge libgomp numpy flask festim python-gmsh gmsh python-dotenv
 
 
 # Expose Flask backend port
@@ -48,5 +65,6 @@ COPY . .
 
 # Expose Next.js application port
 EXPOSE 3000
-RUN npm i
+RUN apt-get update && apt-get install -y npm
+RUN npm i --omit=dev
 CMD ["npm", "run", "start:all"]
