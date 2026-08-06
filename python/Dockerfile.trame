@@ -1,0 +1,27 @@
+FROM kitware/trame:conda-glvnd
+
+ENV TRAME_PYTHON=3.13
+ENV TRAME_CLIENT_TYPE=vue3
+
+ENV FESTIM_GUI_PYTHON=/opt/trame/festim-env/bin/python
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main \
+    && conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r \
+    && gosu trame-user conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main \
+    && gosu trame-user conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r \
+    && conda create -y -p /opt/trame/festim-env -c conda-forge \
+        python=3.12 festim matplotlib fenics-dolfinx \
+    && conda clean -afy \
+    && $FESTIM_GUI_PYTHON -c "import festim"
+
+COPY --chown=trame-user:trame-user ./python/trame /local-app
+COPY --chown=trame-user:trame-user ./python/trame/setup /deploy/setup
+
+RUN /opt/trame/entrypoint.sh build
+RUN $TRAME_VENV/bin/pip install wslink
+RUN $TRAME_VENV/bin/python -c "import wslink"
+
+RUN apt-get update \
+    && apt-get install -y \
+    libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
+
