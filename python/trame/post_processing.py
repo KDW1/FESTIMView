@@ -26,7 +26,7 @@ class PostProcessing(TrameApp):
     file = None
     async def child_receive_msg(self, data):
             print("Received message: ", data)
-            # data = json.loads(data)
+            
             print("Data is: ", data)
             action = data.get("action", None)
             match action:

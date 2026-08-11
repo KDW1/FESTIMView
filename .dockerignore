@@ -9,7 +9,7 @@ node_modules/
 
 # Ignore logs and build outputs
 /python/festim/
-/python/trame/data/
+/python/trame
 /python/__pycache__/
 *.log
 .next

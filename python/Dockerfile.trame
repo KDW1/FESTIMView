@@ -1,27 +1,31 @@
-FROM kitware/trame:conda-glvnd
+FROM kitware/trame:uv
 
-ENV TRAME_PYTHON=3.13
+ENV TRAME_PYTHON=3.12
 ENV TRAME_CLIENT_TYPE=vue3
 
-ENV FESTIM_GUI_PYTHON=/opt/trame/festim-env/bin/python
-RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main \
-    && conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r \
-    && gosu trame-user conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main \
-    && gosu trame-user conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r \
-    && conda create -y -p /opt/trame/festim-env -c conda-forge \
-        python=3.12 festim matplotlib fenics-dolfinx \
-    && conda clean -afy \
-    && $FESTIM_GUI_PYTHON -c "import festim"
+RUN install -d -o trame-user -g trame-user /deploy
 
-COPY --chown=trame-user:trame-user ./python/trame /local-app
+ARG PV_URL='https://www.paraview.org/files/v6.1/ParaView-6.1.0-MPI-Linux-Python3.12-x86_64.tar.gz'
+RUN mkdir -p /opt/paraview && cd /opt/paraview && wget -qO- $PV_URL | tar --strip-components=1 -xzv
+ENV TRAME_PARAVIEW=/opt/paraview
+ENV VTK_DEFAULT_OPENGL_WINDOW=vtkEGLRenderWindow
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpciaccess0 \
+    libgl1 \
+    libegl1 \
+    libx11-6 \
+    libxext6 \
+    libxrender1 \
+    libxcb1 \
+    libxkbcommon-x11-0 \
+    libdbus-1-3 \
+ && rm -rf /var/lib/apt/lists/*
+
+
+COPY --chown=trame-user:trame-user ./python/trame /deploy
 COPY --chown=trame-user:trame-user ./python/trame/setup /deploy/setup
 
-RUN /opt/trame/entrypoint.sh build
-RUN $TRAME_VENV/bin/pip install wslink
-RUN $TRAME_VENV/bin/python -c "import wslink"
-
-RUN apt-get update \
-    && apt-get install -y \
-    libxrender1 \
-    && rm -rf /var/lib/apt/lists/*
+RUN /opt/trame/entrypoint.sh build \
+    && $TRAME_VENV/bin/python -c "import wslink"
 
