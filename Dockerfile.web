@@ -23,7 +23,7 @@ EXPOSE 8000
 
 WORKDIR /festim-view
 
-COPY --exclude=./python/trame --exclude=./setup . .
+COPY . .
 
 # Expose Next.js application port
 EXPOSE 3000
