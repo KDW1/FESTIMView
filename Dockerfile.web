@@ -1,29 +1,52 @@
-# Stage 1: Dependencies
-FROM node:20-alpine AS deps
-COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+# Dockerfile for Next.js with standalone output
 
-# Stage 2: Builder
+# Stage 1: Install dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Stage 2: Build the application
 FROM node:20-alpine AS builder
-COPY --from=deps /node_modules ./node_modules
+WORKDIR /app
+
+# Copy dependencies from the deps stage
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ENV NODE_ENV=production
+
+# Set environment variables for the build
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+# Build the Next.js application
 RUN npm run build
 
-# Stage 3: Runner
+# Stage 3: Production image
 FROM node:20-alpine AS runner
-ENV NODE_ENV=production
-ENV PORT=3000
+WORKDIR /app
 
+# Set production environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create a non-root user for security
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /public ./public
-COPY --from=builder /.next/standalone ./
-COPY --from=builder /.next/static ./.next/static
+# Copy the standalone build output
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-RUN chown -R nextjs:nodejs
+# Switch to non-root user
 USER nextjs
-EXPOSE 3000
+
+# Cloud Run sets the PORT environment variable
+EXPOSE 8080
+ENV PORT=8080
+ENV HOSTNAME="0.0.0.0"
+
+# Start the application
 CMD ["node", "server.js"]
