@@ -1,0 +1,9 @@
+FROM continuumio/miniconda3
+
+RUN conda create -n pv-env python=3.12 \
+    && conda install -n pv-env -c conda-forge libgomp numpy flask festim python-gmsh gmsh python-dotenv \
+    && conda clean -afy
+
+COPY /python/backend.py /backend.py
+EXPOSE 8080
+CMD ["conda", "run", "-n", "pv-env", "python", "backend.py"]
