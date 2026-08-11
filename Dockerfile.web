@@ -4,6 +4,12 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
+# Set web application environment variables
+ENV FLASK_PORT=8000
+ENV PRODUCTION=false
+ENV BACKEND_DOMAIN=http://localhost:8000
+ENV TRAME_DOMAIN=http://localhost:8080
+
 # Copy package files and install dependencies
 COPY package.json package-lock.json* ./
 RUN npm ci
@@ -44,8 +50,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 USER nextjs
 
 # Cloud Run sets the PORT environment variable
-EXPOSE 8080
-ENV PORT=8080
+EXPOSE 3000
+ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Start the application
