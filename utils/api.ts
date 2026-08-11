@@ -14,9 +14,10 @@ class Backend {
         try {
             const data = await this.sendRequest("/exec", "POST", { code, postprocessing, filepath })
             return data
-        } catch (error) {
+        } catch (e) {
+            let error = e as Error
             console.log("We encountered an error")
-            console.log(error.message)
+            if(error) console.log(error.message)
             return {
                 success: false,
                 error

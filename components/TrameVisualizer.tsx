@@ -1,6 +1,5 @@
-import ClientCommunicator from "@kitware/trame-iframe"
 import { useEffect, useState } from "react"
-import { FESTIMSim, presetSimulations } from "@/utils/simulations"
+import { FESTIMSim } from "@/utils/simulations"
 import FESTIMCodePrompts from "./FESTIMCodePrompts";
 import { Binding } from "@/app/page";
 import { Play } from "next/font/google";
@@ -19,7 +18,7 @@ type VisualizerProps = {
   simulation?: FESTIMSim;
   updateBindings: Function;
   updateMode: Function;
-  onCommunicatorReady: (communicator: unknown) => void;
+  onCommunicatorReady?: (communicator: unknown) => void;
   mode: "festim" | "window";
   bindings: Binding[];
   postProcessingFilepath: string;
@@ -32,8 +31,6 @@ type VisualizerProps = {
   setSimulationsMenuVisible: Function;
 };
 
-const iframe_id = "my_frame"
-const iframe_url = "http://localhost:8080"
 
 export default function TrameVisualizer({
   onCommunicatorReady, identifyExportPath, setSimulationsMenuVisible, postProcessingFilepath, postProcessingDone, setPostProcessingDone, processingCode, simulation, sendPythonRequest, updateBindings, bindings, mode, updateMode, currentIndex, setCurrentIndex
@@ -41,9 +38,17 @@ export default function TrameVisualizer({
   const tabs = simulation ? ["Window", "FESTIM"] : ["Window"]
   const [resolution, setResolution] = useState("...")
   const [field, setField] = useState("...")
-  const [currentTab, setCurrentTab] = useState(mode)
+  const [currentTab, setCurrentTab] = useState<"window" | "festim">(mode)
   const [currentTimeStep, setCurrentTimeStep] = useState(0)
   const [dataInitialized, setDataInitialized] = useState(false)
+
+  const IFRAME_ID = "my_frame"
+  const IFRAME_URL = "http://localhost:8080"
+
+  console.log("Environment Variables")
+  console.log("Trame Domain: ", process.env)
+  console.log(IFRAME_URL)
+  console.log(IFRAME_ID)
 
   // Hard coded variables until I can figure out the reverse proxy...
   const STEP = 1
@@ -54,63 +59,31 @@ export default function TrameVisualizer({
   let iframeClientCommunicator: unknown = null;
   let iframe: HTMLElement | null = null;
 
-  onCommunicatorReady = (communicator: ClientCommunicator) => {
-    communicator.state.onReady(() => {
-      console.log("Communicator ready...")
-      communicator.state.watch(['resolution'], (e) => {
-        console.log("There was a change")
-        console.log("Field Options: ", e)
-        setResolution(e)
-      })
-    })
-  }
 
   useEffect(() => {
     console.log("Mounting trame visualizer component....")
-    let iframe = document.getElementById(iframe_id);
+    let iframe: HTMLIFrameElement = document.getElementById(IFRAME_ID) as HTMLIFrameElement;
 
     if (iframe == null) {
-      throw new Error(`iframe ${iframe_id} not found`);
+      throw new Error(`iframe ${IFRAME_ID} not found`);
+    } else {
+      iframe.src = IFRAME_URL as string
     }
-
-    const createClientCommunicator = () => {
-      let iframeClientCommunicator = new ClientCommunicator(iframe, iframe_url);
-      onCommunicatorReady(iframeClientCommunicator);
-      console.log("Creating client commuicator")
-    };
-
-    listeners.push(createClientCommunicator);
-    console.log("Iframe: ", iframe)
-    iframe.addEventListener('load', createClientCommunicator);
-    iframe.setAttribute("src", iframe_url)
-    console.log("Set src of iframe...")
-    return function unmount() {
-      console.log("Unmounting the client communicator")
-      if (iframe) {
-        listeners.forEach((l) => iframe.removeEventListener('load', l));
-      }
-
-      listeners = [];
-
-      if (iframeClientCommunicator) {
-        iframeClientCommunicator.cleanup();
-      }
-    };
   }, [])
 
-  useEffect(()=>{
+  useEffect(() => {
     setCurrentTab(mode)
   }, [mode])
 
   const sendMessage = (value: { [key: string]: any }) => {
-    let iframe = document.getElementById(iframe_id)
+    let iframe: HTMLIFrameElement = document.getElementById(IFRAME_ID) as HTMLIFrameElement
     if ("time" in value) {
       setCurrentTimeStep(value["time"])
     }
     if (value["action"] == "downloadData") {
       setDataInitialized(true)
     }
-    iframe.contentWindow.postMessage({
+    if (iframe && iframe.contentWindow) iframe.contentWindow.postMessage({
       emit: "parent-to-child",
       value
     }, "*")
@@ -136,7 +109,7 @@ export default function TrameVisualizer({
           (
             <button key={`option${tab}`} onClick={(e) => {
               e.preventDefault()
-              setCurrentTab(tab.toLowerCase())
+              setCurrentTab(tab.toLowerCase() as "festim" | "window")
               if (tab == "Window") loadData()
               updateMode(tab.toLowerCase())
             }} disabled={tab.toLowerCase() == "window" && !postProcessingDone} className={`cursor-pointer disabled:bg-gray-300 ease-in-out duration-300 transition ${tab.toLowerCase() == currentTab ? "bg-primarybg" : "bg-lightbg"} px-2 py-1 rounded-md`}>{tab == "Window" ? "Post Processing Window" : "FESTIM"}</button>
@@ -145,7 +118,7 @@ export default function TrameVisualizer({
         }
       </div>
       <div className={`flex-col flex flex-1 ${currentTab == "window" ? "" : "hidden h-0"}`}>
-        <iframe id={iframe_id} className="h-full w-full" sandbox="allow-scripts allow-same-origin" />
+        <iframe id={IFRAME_ID} className="h-full w-full" sandbox="allow-scripts allow-same-origin" />
       </div>
       {
         currentTab == "festim" && simulation &&

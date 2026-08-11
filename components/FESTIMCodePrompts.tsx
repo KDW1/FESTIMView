@@ -27,7 +27,7 @@ function InputList({ processingCode, setting, list, bindings, updateBindings, cu
         let indexedBinding = bindings[currentIndex]
 
         const getBindingOfSetting = (classSetting: FESTIMSetting) => {
-            let list = indexedBinding.values[setting.name]
+            let list = indexedBinding.values[setting.name ?? setting.title]
             if (DEBUGGING_LISTS) console.log("Indexed Binding: ", indexedBinding)
             let indexedObject = list[index]
             if (DEBUGGING_LISTS) console.log(`Indexed Object for index ${index}`, indexedObject)
@@ -36,7 +36,7 @@ function InputList({ processingCode, setting, list, bindings, updateBindings, cu
         }
 
         const eventHandler = (e: ChangeEvent<any, any>, classSetting: FESTIMSetting) => {
-            let list = [...indexedBinding.values[setting.name]]
+            let list = [...indexedBinding.values[setting.name ?? setting.title]]
             let indexedObject = list[index]
             let binding = prefix + getBindingName(classSetting) + suffix
             const inputType = e.target.type
@@ -54,7 +54,7 @@ function InputList({ processingCode, setting, list, bindings, updateBindings, cu
 
             updateBindings(setting.name, list)
 
-            let form: HTMLFormElement = document.getElementById("formStep")
+            let form: HTMLFormElement = document.getElementById("formStep") as HTMLFormElement
             let validity = form.checkValidity()
             updateBindings("valid", validity)
         }
@@ -72,7 +72,7 @@ function InputList({ processingCode, setting, list, bindings, updateBindings, cu
                     )
                 case "boolean":
                     return (
-                        <input required={true} checked={(getBindingOfSetting(setting) == "True" ? true : false )} value={getBindingOfSetting(classSetting) ?? ""} key={`item${classSetting.title}${currentIndex}`} onChange={(e) => eventHandler(e, classSetting)} className="mr-auto w-4 h-auto" type="checkbox" name="" id="" />
+                        <input required={true} checked={(getBindingOfSetting(setting) == "True" ? true : false)} value={getBindingOfSetting(classSetting) ?? ""} key={`item${classSetting.title}${currentIndex}`} onChange={(e) => eventHandler(e, classSetting)} className="mr-auto w-4 h-auto" type="checkbox" name="" id="" />
                     )
                 case "enum":
                     return (
@@ -88,7 +88,7 @@ function InputList({ processingCode, setting, list, bindings, updateBindings, cu
                     if (classSetting.type in customClasses) {
                         return (
                             <div className="flex flex-col gap-y-2">
-                                {customClasses[classSetting.type].filter(classProperty => !(classSetting.propertiesToExclude ?? []).includes(classProperty.name)).map(classProperty => (
+                                {customClasses[classSetting.type].filter(classProperty => !(classSetting.propertiesToExclude ?? []).includes(classProperty.name ?? classProperty.title)).map(classProperty => (
                                     <div key={`${classProperty.title}`} className="flex flex-col">
                                         <p className="text-sm">
                                             {classProperty.title}{classProperty.description && <em>, {classProperty.description}</em>}
@@ -114,7 +114,7 @@ function InputList({ processingCode, setting, list, bindings, updateBindings, cu
                     // setIndices([...indices, newIndex])
 
                     let indexedBinding = bindings[currentIndex]
-                    let list = indexedBinding.values[setting.name]
+                    let list = indexedBinding.values[setting.name ?? setting.title]
                     let longerList = [...list, {}]
                     // Making that new space for the new array item
                     updateBindings(setting.name, longerList)
@@ -126,7 +126,7 @@ function InputList({ processingCode, setting, list, bindings, updateBindings, cu
                     // setIndices(indices.slice(0, indices.length - 1))
 
                     let indexedBinding = bindings[currentIndex]
-                    let list = indexedBinding.values[setting.name]
+                    let list = indexedBinding.values[setting.name ?? setting.title]
                     let shortenedList = [...list.slice(0, list.length - 1)]
 
                     updateBindings(setting.name, shortenedList)
@@ -202,7 +202,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                     )
                 case "boolean":
                     return (
-                        <input required={true} checked={(getBindingOfSetting(setting) == "True" ? true : false )} value={getBindingOfSetting(setting) ?? ""} key={`${prefix}${setting.title}${currentIndex}${suffix}`} onChange={(e) => eventHandler(e, setting)} className="mr-auto w-4 h-auto" type="checkbox" name="" id="" />
+                        <input required={true} checked={(getBindingOfSetting(setting) == "True" ? true : false)} value={getBindingOfSetting(setting) ?? ""} key={`${prefix}${setting.title}${currentIndex}${suffix}`} onChange={(e) => eventHandler(e, setting)} className="mr-auto w-4 h-auto" type="checkbox" name="" id="" />
                     )
                 case "enum":
                     return (
@@ -224,9 +224,15 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                                     await sendPythonRequest(null, true)
                                 } else {
                                     let threshold = 4
-                                    let unvalidatedSteps = []
+                                    let unvalidatedSteps: {
+                                        valid: boolean;
+                                        title: string;
+                                    }[] = []
 
-                                    for (let step of stepsArray) {
+                                    for (let step of stepsArray as {
+                                        valid: boolean;
+                                        title: string;
+                                    }[]) {
                                         if (!step.valid) unvalidatedSteps.push(step)
                                     }
 
@@ -263,32 +269,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                                         link.click()
                                         link.remove()
                                     }
-                                } else {
-                                    let threshold = 4
-                                    let unvalidatedSteps = []
-
-                                    for (let step of stepsArray) {
-                                        if (!step.valid) unvalidatedSteps.push(step)
-                                    }
-
-                                    setAlertMode("error")
-                                    setShowAlert(true)
-                                    if (unvalidatedSteps.length > threshold) {
-                                        setAlerts([`${unvalidatedSteps.length} steps are incomplete!`])
-                                    } else {
-                                        let out = unvalidatedSteps.map(step => `"${step.title}" step is not complete`)
-                                        setAlerts(out)
-                                    }
-
-                                    setTimeout(() => {
-                                        setShowAlert(false)
-                                    }, 3000)
-
-                                    setTimeout(() => {
-                                        setAlerts([])
-                                    }, 3500);
                                 }
-                                console.log(bindings)
                             }} className={`px-2 py-1 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-300 hover:bg-primarybg duration-300 ease-in-out transition bg-lightbg rounded-md`}>
                                 Download .ZIP File of Exports
                             </button>
@@ -326,149 +307,154 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
     }, [currentIndex, simulation])
     return (
         <div className="flex flex-row flex-1 gap-2 h-4/5">
-        <div className="w-1/5 flex flex-col">
-        <p className="text-base text-primary font-bold">Simulation Steps</p>
-        <div className="bg-lightbg h-full p-2 flex flex-col rounded">
+            <div className="w-1/5 flex flex-col">
+                <p className="text-base text-primary font-bold">Simulation Steps</p>
+                <div className="bg-lightbg h-full p-2 flex flex-col rounded">
 
-        {simulation.steps.map((step, i) => (
-            <button key={`menuButton${i}`} onClick={()=>{
-                changeToStep(i)
-            }} className={`text-sm ${i == currentIndex ? "text-blue-900 font-semibold" : "text-blue-400"} duration-300 ease-in-out hover:translate-x-2 text-start cursor-pointer`}>{step.title}</button>
-        ))}
-        </div>
-        </div>
-        <div className="text-primary h-full flex flex-1 gap-2 flex-col text-base">
-                    <p className="group">
-                        <span className="font-semibold cursor-pointer">{currentStep.title}</span>
-                        <span className="opacity-0 group-hover:opacity-100 text-xs duration-300 ease-in-out transition-all"> double click to select a step</span>
-                    </p>
-            {currentStep.description && <p className="italic text-xs mb-2">{currentStep.description}</p>}
-            <form id="formStep" className="gap-4 min-h-20 flex-col flex flex-1 overflow-y-auto pr-2">
-                {
-                    currentStep.settings.map((setting, i) => (
-                        <div key={`setting${i}`} className="flex flex-col">
-                            <p className="text-sm">
-                                {setting.title}
-                            </p>
-                            {setting.description && <p className="text-sm italic">
-                                {setting.description}
-                            </p>}
-                            {setting.list ? <InputList processingCode={processingCode} list={bindings[currentIndex].values[setting.name]} currentIndex={currentIndex} updateBindings={updateBindings} bindings={bindings} setting={setting}></InputList> : correspondingField(setting)}
-                        </div>
-                    ))
-                }
-            </form>
-            <p className={`text-sm ${alertMode == "error" ? "text-rose-600" : "text-green-400"} transition-all duration-300 ease-in-out ${showAlert ? "opacity-100" : "opacity-0"}`}>{alerts.map((alert, i) => <span key={`span${i}`}>{alert} <br /></span>)}</p>
-            <div className="flex flex-row mt-auto space-x-2">
-                <button onClick={(e) => {
-                    e.target.disabled = true
-                    let bindingObject = bindings.map((b) => {
-                        return { values: b.values }
-                    })
-                    let bindingDictionary: any = JSON.parse(localStorage.getItem("bindings") ?? "{}")
-                    bindingDictionary[simulation.title] = bindingObject
-                    localStorage.setItem("bindings", JSON.stringify(bindingDictionary))
-                    setAlertMode("notification")
-                    setShowAlert(true)
-                    setAlerts(["Saved settings to desktop"])
-                    setTimeout(() => {
-                        e.target.disabled = false
-                        setAlerts([])
-                        setShowAlert(false)
-                    }, 1000)
-                }} className="button mt-auto group tooltip-container">
-                    <span className="tooltip">Save Settings</span>
-                    <FontAwesomeIcon className="text-base" icon={faSave}></FontAwesomeIcon>
-                </button>
-                <button onClick={(e) => {
-                    e.target.disabled = true
-                    let bindingDictionary: any = JSON.parse(localStorage.getItem("bindings") ?? "{}")
-                    delete bindingDictionary[simulation.title]
-                    localStorage.setItem("bindings", JSON.stringify(bindingDictionary))
-                    updateBindings("*", populateBindings(simulation, {}, true))
-                    setShowAlert("notification")
-                    setShowAlert(true)
-                    setAlerts(["Saved settings to desktop"])
-                    setTimeout(() => {
-                        e.target.disabled = false
-                        setAlerts([])
-                        setShowAlert(false)
-                    }, 1000)
-                }} className="button mt-auto group tooltip-container">
-                    <span className="tooltip">Reset Settings and Clear Save</span>
-                    <FontAwesomeIcon className="text-base" icon={faEraser}></FontAwesomeIcon>
-                </button>
-                <button onClick={(e) => {
-                    e.target.disabled = true
-                    let fileUploadInput = document.createElement("input")
-                    fileUploadInput.type = "file"
-                    fileUploadInput.accept = ".json"
-                    fileUploadInput.click()
-                    fileUploadInput.addEventListener("change", (e) => {
-                        console.log(e.target.files)
-                        let file = e.target.files[0]
-                        if (file) {
-                            const reader = new FileReader()
-                            reader.onload = () => {
-                                let jsonContent = reader.result
-                                console.log("Parsed JSON Content: ", JSON.parse(jsonContent))
-                                let bindings = populateBindings(simulation, JSON.parse(jsonContent))
-                                console.log(bindings)
-                                updateBindings("*", bindings)
-                            }
-                            reader.readAsText(file)
-                        }
-                    })
-                    e.target.disabled = false
-                }} className="button mt-auto group tooltip-container">
-                    <span className="tooltip">Upload Settings from .JSON</span>
-                    <FontAwesomeIcon className="text-base" icon={faDownload}></FontAwesomeIcon>
-                </button>
-                <button onClick={(e) => {
-                    e.target.disabled = true
-                    let a = document.createElement("a")
-                    let link = new Blob([JSON.stringify(bindings.map((b) => {
-                        return { values: b.values }
-                    }))], { type: "application/json" })
-                    a.href = URL.createObjectURL(link)
-                    let date = new Date()
-                    a.download = `${simulation.title.toLowerCase().replaceAll(" ", "_").toLocaleLowerCase()}_settings_${date.toLocaleDateString()}`
-                    a.click()
-                    e.target.disabled = false
-                }} className="button mt-auto group tooltip-container">
-                    <span className="tooltip">Save Settings as .JSON</span>
-                    <FontAwesomeIcon className="text-base" icon={faFile}></FontAwesomeIcon>
-                </button>
-                <div className="flex gap-2 h-min overflow-x-auto mt-auto">
-                    {
-                        currentIndex != 0 &&
-                        <button onClick={() => {
-                            let previousIndex = currentIndex - 1
-                            changeToStep(previousIndex)
-                        }} className="button">
-                            Previous
-                        </button>
-                    }
-                    {
-                        currentIndex != simulation.steps.length - 1 &&
-                        <>
-                            <button onClick={() => {
-                                let nextIndex = currentIndex + 1
-                                changeToStep(nextIndex)
-                            }} className="button">
-                                Next
-                            </button>
-                            <button onClick={() => {
-                                let lastIndex = simulation.steps.length - 1
-                                changeToStep(lastIndex)
-                            }} className="button">
-                                Skip to Last Step
-                            </button>
-                        </>
-                    }
+                    {simulation.steps.map((step, i) => (
+                        <button key={`menuButton${i}`} onClick={() => {
+                            changeToStep(i)
+                        }} className={`text-sm ${i == currentIndex ? "text-blue-900 font-semibold" : "text-blue-400"} duration-300 ease-in-out hover:translate-x-2 text-start cursor-pointer`}>{step.title}</button>
+                    ))}
                 </div>
             </div>
-        </div >
+            <div className="text-primary h-full flex flex-1 gap-2 flex-col text-base">
+                <p className="group">
+                    <span className="font-semibold cursor-pointer">{currentStep.title}</span>
+                    <span className="opacity-0 group-hover:opacity-100 text-xs duration-300 ease-in-out transition-all"> double click to select a step</span>
+                </p>
+                {currentStep.description && <p className="italic text-xs mb-2">{currentStep.description}</p>}
+                <form id="formStep" className="gap-4 min-h-20 flex-col flex flex-1 overflow-y-auto pr-2">
+                    {
+                        currentStep.settings.map((setting, i) => (
+                            <div key={`setting${i}`} className="flex flex-col">
+                                <p className="text-sm">
+                                    {setting.title}
+                                </p>
+                                {setting.description && <p className="text-sm italic">
+                                    {setting.description}
+                                </p>}
+                                {setting.list ? <InputList processingCode={processingCode} list={bindings[currentIndex].values[setting.name ?? setting.title]} currentIndex={currentIndex} updateBindings={updateBindings} bindings={bindings} setting={setting}></InputList> : correspondingField(setting)}
+                            </div>
+                        ))
+                    }
+                </form>
+                <p className={`text-sm ${alertMode == "error" ? "text-rose-600" : "text-green-400"} transition-all duration-300 ease-in-out ${showAlert ? "opacity-100" : "opacity-0"}`}>{alerts.map((alert, i) => <span key={`span${i}`}>{alert} <br /></span>)}</p>
+                <div className="flex flex-row mt-auto space-x-2">
+                    <button onClick={(e) => {
+                        let target = e.target as HTMLButtonElement
+                        target.disabled = true
+                        let bindingObject = bindings.map((b) => {
+                            return { values: b.values }
+                        })
+                        let bindingDictionary: any = JSON.parse(localStorage.getItem("bindings") ?? "{}")
+                        bindingDictionary[simulation.title] = bindingObject
+                        localStorage.setItem("bindings", JSON.stringify(bindingDictionary))
+                        setAlertMode("notification")
+                        setShowAlert(true)
+                        setAlerts(["Saved settings to desktop"])
+                        setTimeout(() => {
+                            target.disabled = false
+                            setAlerts([])
+                            setShowAlert(false)
+                        }, 1000)
+                    }} className="button mt-auto group tooltip-container">
+                        <span className="tooltip">Save Settings</span>
+                        <FontAwesomeIcon className="text-base" icon={faSave}></FontAwesomeIcon>
+                    </button>
+                    <button onClick={(e) => {
+                        let target = e.target as HTMLButtonElement
+                        target.disabled = true
+                        let bindingDictionary: any = JSON.parse(localStorage.getItem("bindings") ?? "{}")
+                        delete bindingDictionary[simulation.title]
+                        localStorage.setItem("bindings", JSON.stringify(bindingDictionary))
+                        updateBindings("*", populateBindings(simulation, {}, true))
+                        setShowAlert(true)
+                        setAlerts(["Saved settings to desktop"])
+                        setTimeout(() => {
+                            target.disabled = false
+                            setAlerts([])
+                            setShowAlert(false)
+                        }, 1000)
+                    }} className="button mt-auto group tooltip-container">
+                        <span className="tooltip">Reset Settings and Clear Save</span>
+                        <FontAwesomeIcon className="text-base" icon={faEraser}></FontAwesomeIcon>
+                    </button>
+                    <button onClick={(e) => {
+                        let target = e.target as HTMLButtonElement
+                        target.disabled = true
+                        let fileUploadInput = document.createElement("input")
+                        fileUploadInput.type = "file"
+                        fileUploadInput.accept = ".json"
+                        fileUploadInput.click()
+                        fileUploadInput.addEventListener("change", (e) => {
+                            if(!e.target) return
+                            let target = e.target as HTMLInputElement
+                            if (target.files && target.files[0]) {
+                                console.log(target.files)
+                                let file = target.files[0]
+                                const reader = new FileReader()
+                                reader.onload = () => {
+                                    let jsonContent = reader.result as string
+                                    console.log("Parsed JSON Content: ", JSON.parse(jsonContent))
+                                    let bindings = populateBindings(simulation, JSON.parse(jsonContent))
+                                    console.log(bindings)
+                                    updateBindings("*", bindings)
+                                }
+                                reader.readAsText(file)
+                            }
+                        })
+                        target.disabled = false
+                    }} className="button mt-auto group tooltip-container">
+                        <span className="tooltip">Upload Settings from .JSON</span>
+                        <FontAwesomeIcon className="text-base" icon={faDownload}></FontAwesomeIcon>
+                    </button>
+                    <button onClick={(e) => {
+                        let target = e.target as HTMLButtonElement
+                        target.disabled = true
+                        let a = document.createElement("a")
+                        let link = new Blob([JSON.stringify(bindings.map((b) => {
+                            return { values: b.values }
+                        }))], { type: "application/json" })
+                        a.href = URL.createObjectURL(link)
+                        let date = new Date()
+                        a.download = `${simulation.title.toLowerCase().replaceAll(" ", "_").toLocaleLowerCase()}_settings_${date.toLocaleDateString()}`
+                        a.click()
+                        target.disabled = false
+                    }} className="button mt-auto group tooltip-container">
+                        <span className="tooltip">Save Settings as .JSON</span>
+                        <FontAwesomeIcon className="text-base" icon={faFile}></FontAwesomeIcon>
+                    </button>
+                    <div className="flex gap-2 h-min overflow-x-auto mt-auto">
+                        {
+                            currentIndex != 0 &&
+                            <button onClick={() => {
+                                let previousIndex = currentIndex - 1
+                                changeToStep(previousIndex)
+                            }} className="button">
+                                Previous
+                            </button>
+                        }
+                        {
+                            currentIndex != simulation.steps.length - 1 &&
+                            <>
+                                <button onClick={() => {
+                                    let nextIndex = currentIndex + 1
+                                    changeToStep(nextIndex)
+                                }} className="button">
+                                    Next
+                                </button>
+                                <button onClick={() => {
+                                    let lastIndex = simulation.steps.length - 1
+                                    changeToStep(lastIndex)
+                                }} className="button">
+                                    Skip to Last Step
+                                </button>
+                            </>
+                        }
+                    </div>
+                </div>
+            </div >
         </div>
     )
 }

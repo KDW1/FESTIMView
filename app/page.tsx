@@ -30,13 +30,14 @@ export type Binding = {
 const DEBUGGING_PARSER = false
 const IN_DEVELOPMENT = !process.env.PRODUCTION
 
+export const PRESET_SIMULATIONS = [
+  permeation2DSimulation,
+  exampleSimulation,
+  gmshSimulation
+]
+
 export default function Home() {
-  const PRESET_SIMULATIONS = [
-    permeation2DSimulation,
-    exampleSimulation,
-    gmshSimulation
-  ]
-  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim | null>(PRESET_SIMULATIONS[2])
+  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim>(PRESET_SIMULATIONS[2])
 
   // Note this method of storing bindings locally will change in the future
   // Since I'm pretty sure this isn't reliable
@@ -48,7 +49,7 @@ export default function Home() {
     if (typeof window !== 'undefined' && localStorage.getItem("bindings")) {
       let objects
       try {
-        objects = JSON.parse(localStorage.getItem("bindings"))
+        objects = JSON.parse(localStorage.getItem("bindings") ?? "{}")
         // console.log("Objects: ", objects)
       } catch (error) {
         console.log("Error: ", error)
@@ -61,7 +62,7 @@ export default function Home() {
 
   const [postProcessingFilepath, setPostProcessingFilepath] = useState([""])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [postProcessingDone, setPostProcessingDone] = useState(false)
+  const [postProcessingDone, setPostProcessingDone] = useState(true)
   const [mode, setMode] = useState<"window" | "festim">("festim")
   const [snippetOnly, setSnippetOnly] = useState<boolean>(true)
   const [bindings, setBindings] = useState<Binding[]>(populateBindings(currentSimulation, loadBindingsFromLocalStorage()[currentSimulation.title])) // Bindings for selected simulations
@@ -160,10 +161,10 @@ export default function Home() {
 
           let expression = tokens.slice(currentIndex, closingIndex).join("")
           let cleanExpression = expression.replaceAll("{*", "{").replaceAll("*}", "}")
-          let [value, expressionValid] = parseRecipe({ values: selectedBinding.values, recipe: expression })
+          let [value, expressionValid]  = parseRecipe({ values: selectedBinding.values, recipe: expression })
 
           // console.log("Clean Expression: ", cleanExpression)
-          out.push(value != cleanExpression ? value : `@${pageName}--${expression}@`)
+          out.push(value != cleanExpression ? value as string : `@${pageName}--${expression}@`)
           currentIndex = nextIndex
           if (DEBUGGING_PARSER) console.log(`Encountered step variable, form: @${pageName}--${expression}@`)
 
@@ -211,7 +212,7 @@ export default function Home() {
           let arrayBinding = indexedBinding.values[arrayName]
           let expression = tokens.slice(currentIndex, closingIndex).join("")
 
-          let listExpressions = []
+          let listExpressions : string[] = []
 
           for (let binding of arrayBinding) {
             if (Object.keys(binding).length == 0) continue
@@ -219,7 +220,7 @@ export default function Home() {
             let [parsedExpression, expressionValid] = parseRecipe({ values: binding, recipe: expression })
             if (!expressionValid) valid = false
 
-            listExpressions.push(parsedExpression)
+            listExpressions.push(parsedExpression as string)
             let nextCharacter = tokens[nextIndex][0]
             let isInline = (nextCharacter == "]" || nextCharacter == "," || nextCharacter == "$")
 
@@ -249,16 +250,16 @@ export default function Home() {
 
   const updateCodeWithIndexedBinding = (indexedBinding: Binding, exclusive: boolean) => {
     if (exclusive) {
-      let [parsedRecipe, valid] = parseRecipe(indexedBinding)
-      indexedBinding.snippet = parsedRecipe
-      indexedBinding.valid = valid
-      setPythonCode(parsedRecipe)
+      let [parsedRecipe, valid] = parseRecipe({values: indexedBinding.values, recipe: indexedBinding.recipe as string})
+      indexedBinding.snippet = parsedRecipe as string
+      indexedBinding.valid = valid as boolean
+      setPythonCode(indexedBinding.snippet)
     } else {
       let out = []
       for (let binding of bindings) {
-        let [parsedRecipe, valid] = parseRecipe(binding)
-        binding.snippet = parsedRecipe
-        binding.valid = valid
+        let [parsedRecipe, valid] = parseRecipe({values: binding.values, recipe: binding.recipe as string})
+        binding.snippet = parsedRecipe as string
+        binding.valid = valid as boolean
         if (binding.snippet) out.push(binding.snippet)
       }
       let outString = out.join("\n\n")
@@ -553,7 +554,7 @@ export default function Home() {
 
         <div className="w-full md:w-3/5 flex flex-col gap-4">
           <div className="flex flex-1 h-2/3">
-            <TrameVisualizer setSimulationsMenuVisible={setSimulationsMenuVisible} identifyExportPath={identifyExportPath} postProcessingFilepath={postProcessingFilepath} postProcessingDone={postProcessingDone} setPostProcessingDone={setPostProcessingDone} processingCode={processingCode} sendPythonRequest={sendPythonRequest} mode={mode} currentIndex={currentIndex} setCurrentIndex={(index: number) => setCurrentIndex(index)} updateMode={(mode: "window" | "festim") => setMode(mode)} bindings={bindings} updateBindings={updateBindings} simulation={currentSimulation} />
+            <TrameVisualizer setSimulationsMenuVisible={setSimulationsMenuVisible} identifyExportPath={identifyExportPath} postProcessingFilepath={postProcessingFilepath[0]} postProcessingDone={postProcessingDone} setPostProcessingDone={setPostProcessingDone} processingCode={processingCode} sendPythonRequest={sendPythonRequest} mode={mode} currentIndex={currentIndex} setCurrentIndex={(index: number) => setCurrentIndex(index)} updateMode={(mode: "window" | "festim") => setMode(mode)} bindings={bindings} updateBindings={updateBindings} simulation={currentSimulation} />
           </div>
           <PythonConsole args={args} />
         </div>

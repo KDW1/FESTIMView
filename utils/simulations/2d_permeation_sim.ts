@@ -1,4 +1,4 @@
-import { ClassDictionary } from "../simulations"
+import { ClassDictionary, FESTIMStep, FESTIMSim } from "../simulations"
 
 const problemStep: FESTIMStep = {
   title: "1. Problem",

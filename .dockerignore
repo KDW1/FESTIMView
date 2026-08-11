@@ -1,5 +1,6 @@
 # Ignore dependencies
 node_modules/
+gcloud/
 .env
 
 # Ignore git and local IDE configs

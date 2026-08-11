@@ -425,7 +425,7 @@ export const exampleSimulation: FESTIMSim = {
   imageUrl: "/Example Simulation.png"
 }
 
-export const populateBindings: Function = (simulation: FESTIMSim, storedBindings: object[], empty: boolean = false) => {
+export const populateBindings: Function = (simulation: FESTIMSim, storedBindings: {values: {[key:string]: any}}[], empty: boolean = false) => {
   let bindings = []
   if (typeof storedBindings == "undefined") storedBindings = []
 

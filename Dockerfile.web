@@ -1,33 +1,29 @@
-# syntax=docker/dockerfile:1
-FROM node
-FROM continuumio/miniconda3
+# Stage 1: Dependencies
+FROM node:20-alpine AS deps
+COPY package*.json ./
+RUN npm ci --legacy-peer-deps
 
-# Set web application environment variables
-ENV FLASK_PORT=8000
-ENV PRODUCTION=false
-ENV BACKEND_DOMAIN=http://localhost:8000
-ENV TRAME_DOMAIN=http://localhost:8080
-
-# # Install wget
-RUN apt-get update \
-  && apt-get install -y wget \
-  && rm -rf /var/lib/apt/lists/*
-
-RUN conda create -n pv-env python=3.12 \
-    && conda install -n pv-env -c conda-forge libgomp numpy flask festim python-gmsh gmsh python-dotenv \
-    && conda clean -afy
-
-
-# Expose Flask backend port
-EXPOSE 8000
-
-WORKDIR /festim-view
-
+# Stage 2: Builder
+FROM node:20-alpine AS builder
+COPY --from=deps /node_modules ./node_modules
 COPY . .
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
 
-# Expose Next.js application port
+# Stage 3: Runner
+FROM node:20-alpine AS runner
+ENV NODE_ENV=production
+ENV PORT=3000
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /public ./public
+COPY --from=builder /.next/standalone ./
+COPY --from=builder /.next/static ./.next/static
+
+RUN chown -R nextjs:nodejs
+USER nextjs
 EXPOSE 3000
-RUN apt-get update && apt-get install -y npm
-RUN npm i --omit=dev \ && npm i concurrently
-
-CMD ["npm", "run", "start:without_trame"]
+CMD ["node", "server.js"]
