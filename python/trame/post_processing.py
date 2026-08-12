@@ -13,7 +13,6 @@ from trame.widgets import paraview as pvw
 from trame.widgets import vuetify3 as v3
 from trame.widgets import plotly
 
-import plotly.express as px
 import plotly.graph_objects as go
 
 from paraview.numpy_support import vtk_to_numpy

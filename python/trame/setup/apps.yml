@@ -1,0 +1,13 @@
+trame: # Default app under /index.html
+  cmd:
+    - /opt/paraview/bin/pvpython
+    - --venv
+    - /deploy/server/venv
+    - /deploy/post_processing.py
+    - --host
+    - ${host}
+    - --port
+    - ${port}
+    - --authKey
+    - ${secret}
+    - --server

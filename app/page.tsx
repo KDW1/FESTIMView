@@ -62,7 +62,7 @@ export default function Home() {
 
   const [postProcessingFilepath, setPostProcessingFilepath] = useState([""])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [postProcessingDone, setPostProcessingDone] = useState(true)
+  const [postProcessingDone, setPostProcessingDone] = useState(false)
   const [mode, setMode] = useState<"window" | "festim">("festim")
   const [snippetOnly, setSnippetOnly] = useState<boolean>(true)
   const [bindings, setBindings] = useState<Binding[]>(populateBindings(currentSimulation, loadBindingsFromLocalStorage()[currentSimulation.title])) // Bindings for selected simulations

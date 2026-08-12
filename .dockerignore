@@ -10,7 +10,6 @@ gcloud/
 
 # Ignore logs and build outputs
 /python/festim/
-/python/trame
 /python/__pycache__/
 *.log
 .next

@@ -1,11 +1,7 @@
-numpy
 trame
 trame-iframe
 trame-vuetify
 trame-vtk
-flask
 dotenv
 trame-plotly 
 plotly 
-pandas 
-jupyterlab
