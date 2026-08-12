@@ -24,6 +24,7 @@
 /.next/
 /out
 /vtk_temp
+/gcloud
 
 # production
 /build
