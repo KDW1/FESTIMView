@@ -1,0 +1,34 @@
+name: festim-view
+
+services:
+  backend:
+    build:
+      dockerfile: Dockerfile.backend
+    ports:
+      - 8000:8000
+    environment:
+      - FLASK_PORT=8000
+    volumes:
+      - backend-data:/etc/data
+
+  frontend:
+    build:
+      dockerfile: Dockerfile.web
+    ports:
+      - 3000:3000
+    environment:
+      - PRODUCTION=false
+      - BACKEND_DOMAIN=http://backend:8000
+      - TRAME_DOMAIN=http://localhost:8080
+    depends_on:
+      - backend
+
+  trame:
+    build:
+      dockerfile: python/Dockerfile.trame
+    ports: 
+      - 8080:80
+    volumes:
+      - backend-data:/etc/data
+volumes:
+  backend-data:
