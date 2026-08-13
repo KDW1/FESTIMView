@@ -94,10 +94,9 @@ class PostProcessing(TrameApp):
             Background=[0.12, 0.12, 0.12],
         )
 
-        if file_to_load:
-            print("Loading file (from Paraview setup): ", file_to_load)
-            self.load_file(file_to_load)
-            print("Successfully loaded file (from Paraview setup)")
+        print("Loading file (from Paraview setup): ", file_to_load)
+        self.load_file(file_to_load)
+        print("Successfully loaded file (from Paraview setup)")
 
     def _time_controls_width(self, time_count):
         return f"min(calc(100vw - 2rem), calc({max(time_count, 1)} * 5px + 24rem))"

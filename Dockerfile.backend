@@ -1,5 +1,15 @@
 FROM continuumio/miniconda3
 
+RUN groupadd -r backend-ghost -g 1000 && useradd -r -g backend-ghost backend-ghost -u 1000
+
+# 2. Pre-create the Conda directories as ROOT
+RUN mkdir -p /opt/conda/envs /opt/conda/pkgs /home/backend-ghost/.conda
+
+# 3. Change ownership of Conda and home directories to the non-root user
+RUN chown -R backend-ghost:backend-ghost /opt/conda /home/backend-ghost
+
+USER backend-ghost
+
 RUN conda create -n pv-env python=3.12 \
     && conda install -n pv-env -c conda-forge libgomp numpy flask festim python-gmsh gmsh python-dotenv \
     && conda clean -afy
