@@ -11,3 +11,5 @@ trame: # Default app under /index.html
     - --authKey
     - ${secret}
     - --server
+    - --session
+    - ${id}
