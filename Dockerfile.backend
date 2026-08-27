@@ -15,5 +15,5 @@ RUN conda create -n pv-env python=3.12 \
     && conda clean -afy
 
 COPY /python/backend.py /backend.py
-EXPOSE 8080
+EXPOSE 8000
 CMD ["conda", "run", "-n", "pv-env", "python", "backend.py"]

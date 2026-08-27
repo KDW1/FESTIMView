@@ -2,7 +2,6 @@ name: festim-view
 
 services:
   backend:
-    hostname: 0.0.0.0
     build:
       dockerfile: Dockerfile.backend
     ports:
@@ -13,7 +12,6 @@ services:
       - backend-data:/tmp:rw
 
   frontend:
-    hostname: 0.0.0.0
     build:
       dockerfile: Dockerfile.web
     ports:
@@ -26,7 +24,6 @@ services:
       - backend
 
   trame:
-    hostname: 0.0.0.0
     build:
       dockerfile: python/Dockerfile.trame
     ports: 

@@ -227,5 +227,7 @@ def evaluate_expression():
 
 if __name__ == "__main__":
     port = int(os.getenv("FLASK_PORT", 8000))
+    host = os.getenv("FLASK_HOST", "0.0.0.0")
     print("Hello there...our port is: ", port)
-    app.run(host="0.0.0.0", port=port, debug=os.getenv("FLASK_ENV") != "production")
+    print("Our host is: ", host)
+    app.run(host=host, port=port, debug=os.getenv("FLASK_ENV") != "production")
