@@ -14,7 +14,7 @@ services:
   backend:
     build:
       dockerfile: Dockerfile.backend
-    expose:
+    ports:
       - 8000:8000
     environment:
       - FLASK_PORT=8000
@@ -22,8 +22,8 @@ services:
       - backend-data-1:/tmp:rw
   trame:
     build:
-      dockerfile: python/Dockerfile.trame
-    expose: 
+      dockerfile: Dockerfile.trame
+    ports: 
       - 8080:80
     volumes:
       - backend-data-1:/tmp
