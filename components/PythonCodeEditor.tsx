@@ -1,5 +1,3 @@
-"use client"
-
 import { Editor, MonacoDiffEditor, useMonaco } from "@monaco-editor/react"
 import { useEffect, useRef, useState } from "react"
 import themes from "@/utils/themes"

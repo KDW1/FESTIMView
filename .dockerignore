@@ -11,5 +11,6 @@ gcloud/
 # Ignore logs and build outputs
 /python/festim/
 /python/__pycache__/
+/python/read_my_bp.py
 *.log
 .next

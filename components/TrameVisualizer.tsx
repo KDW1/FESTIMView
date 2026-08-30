@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react"
 import { FESTIMSim } from "@/utils/simulations"
 import FESTIMCodePrompts from "./FESTIMCodePrompts";
 import { Binding } from "@/app/page";
@@ -9,9 +8,6 @@ import { faLastfmSquare } from "@fortawesome/free-brands-svg-icons";
 import { faBackward, faBackwardFast, faBackwardStep, faCross, faForwardFast, faForwardStep, faPlay, faScrewdriverWrench, faWrench, faX, faXmark } from "@fortawesome/free-solid-svg-icons";
 import Image from "next/image";
 import SimulationsMenu from "./SimulationsMenu";
-
-// Entire structre is copied from trame-react since legacy dependencies with
-// react-scripts, react-dom is preventing the package from functioning normally
 
 type VisualizerProps = {
   identifyExportPath: Function;
@@ -31,65 +27,22 @@ type VisualizerProps = {
   setSimulationsMenuVisible: Function;
 };
 
-
 export default function TrameVisualizer({
   onCommunicatorReady, identifyExportPath, setSimulationsMenuVisible, postProcessingFilepath, postProcessingDone, setPostProcessingDone, processingCode, simulation, sendPythonRequest, updateBindings, bindings, mode, updateMode, currentIndex, setCurrentIndex
 }: VisualizerProps) {
   const tabs = simulation ? ["Window", "FESTIM"] : ["Window"]
-  const [resolution, setResolution] = useState("...")
-  const [field, setField] = useState("...")
-  const [currentTab, setCurrentTab] = useState<"window" | "festim">(mode)
-  const [currentTimeStep, setCurrentTimeStep] = useState(0)
-  const [dataInitialized, setDataInitialized] = useState(false)
-
+  
   const IFRAME_ID = "my_frame"
-  const IFRAME_URL = "http://localhost:8080"
-
-  console.log("Environment Variables")
-  console.log("Trame Domain: ", process.env)
-  console.log(IFRAME_URL)
-  console.log(IFRAME_ID)
-
-  // Hard coded variables until I can figure out the reverse proxy...
-  const STEP = 1
-  const MAX_STEP = 2.00 / 0.05 - 1
-  const ANIMATION_INTERVAL = 50
-
-  let listeners: Array<(e: Event) => void> = [];
-  let iframeClientCommunicator: unknown = null;
-  let iframe: HTMLElement | null = null;
-
-
-  useEffect(() => {
-    console.log("Mounting trame visualizer component....")
-    let iframe: HTMLIFrameElement = document.getElementById(IFRAME_ID) as HTMLIFrameElement;
-
-    if (iframe == null) {
-      throw new Error(`iframe ${IFRAME_ID} not found`);
-    } else {
-      iframe.src = IFRAME_URL as string
-    }
-  }, [])
-
-  useEffect(() => {
-    setCurrentTab(mode)
-  }, [mode])
+  const IFRAME_URL = process.env.NEXT_PUBLIC_TRAME_DOMAIN
 
   const sendMessage = (value: { [key: string]: any }) => {
     let iframe: HTMLIFrameElement = document.getElementById(IFRAME_ID) as HTMLIFrameElement
-    if ("time" in value) {
-      setCurrentTimeStep(value["time"])
-    }
-    if (value["action"] == "downloadData") {
-      setDataInitialized(true)
-    }
     if (iframe && iframe.contentWindow) iframe.contentWindow.postMessage({
       emit: "parent-to-child",
       value
     }, "*")
   }
   const loadData = () => {
-    setField("Solid (default)")
     let filepath = identifyExportPath(true)
     console.log("Filepath to be read: ", filepath)
     sendMessage({ "action": "downloadData", "filepath": filepath })
@@ -109,19 +62,19 @@ export default function TrameVisualizer({
           (
             <button key={`option${tab}`} onClick={(e) => {
               e.preventDefault()
-              setCurrentTab(tab.toLowerCase() as "festim" | "window")
+              updateMode(tab.toLowerCase() as "festim" | "window")
               if (tab == "Window") loadData()
               updateMode(tab.toLowerCase())
-            }} disabled={tab.toLowerCase() == "window" && !postProcessingDone} className={`cursor-pointer disabled:bg-gray-300 ease-in-out duration-300 transition ${tab.toLowerCase() == currentTab ? "bg-primarybg" : "bg-lightbg"} px-2 py-1 rounded-md`}>{tab == "Window" ? "Post Processing Window" : "FESTIM"}</button>
+            }} disabled={tab.toLowerCase() == "window" && !postProcessingDone} className={`cursor-pointer disabled:bg-gray-300 ease-in-out duration-300 transition ${tab.toLowerCase() == mode ? "bg-primarybg" : "bg-lightbg"} px-2 py-1 rounded-md`}>{tab == "Window" ? "Post Processing Window" : "FESTIM"}</button>
           )
           )
         }
       </div>
-      <div className={`flex-col flex flex-1 ${currentTab == "window" ? "" : "hidden h-0"}`}>
-        <iframe id={IFRAME_ID} className="h-full w-full" sandbox="allow-scripts allow-same-origin" />
+      <div className={`flex-col flex flex-1 ${mode == "window" ? "" : "hidden h-0"}`}>
+        <iframe id={IFRAME_ID} src={IFRAME_URL} className="h-full w-full" sandbox="allow-scripts allow-same-origin" />
       </div>
       {
-        currentTab == "festim" && simulation &&
+        mode == "festim" && simulation &&
         <FESTIMCodePrompts postProcessingDone={postProcessingDone} sendPythonRequest={sendPythonRequest} processingCode={processingCode} currentIndex={currentIndex} setCurrentIndex={setCurrentIndex} bindings={bindings} updateBindings={updateBindings} simulation={simulation} />
       }
     </div>

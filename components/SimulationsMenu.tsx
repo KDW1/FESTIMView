@@ -2,7 +2,6 @@ import { FESTIMSim } from "@/utils/simulations"
 import { faXmark } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import Image from "next/image"
-import { useState } from "react"
 
 export default function SimulationsMenu({simulations, simulationsMenuVisible, setSimulationsMenuVisible, selectSimulation}: {simulations:FESTIMSim[], simulationsMenuVisible:boolean, setSimulationsMenuVisible:Function, selectSimulation:Function}) {
 

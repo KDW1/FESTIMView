@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 
-COPY --chown=trame-user:trame-user ./trame /deploy
+COPY --chown=trame-user:trame-user ./python/trame /deploy
 
 RUN /opt/trame/entrypoint.sh build \
     && $TRAME_VENV/bin/python -c "import wslink"
