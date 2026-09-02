@@ -1,8 +1,8 @@
 import { ClassDictionary, FESTIMSim, genericSteps } from "../simulations";
 
 export const gmshSimulation: FESTIMSim = {
-  title: "Mesh with GMSH",
-  description: `GMSH is a powerful mesh generation tool that can be used to create complex geometries for FESTIM simulations. It supports a wide range of shapes, physical labels, and CAD import/export, making it ideal for defining detailed 2D or 3D domains. In this tutorial, we will cover: using GMSH directly from a Python script, converting a GMSH model into a dolfinx mesh that can be used with FESTIM, and generating a mesh from a CAD geometry (e.g. STEP file)`,
+  title: "DFG 3D Laminar Benchmark with GMSH",
+  description: `In this tutorial, we will use the gmsh API to generate complex meshes. We will in this tutorial learn how to make the 3D mesh used in the DFG 3D laminar benchmark (https://wwwold.mathematik.tu-dortmund.de/~featflow/en/benchmarks/cfdbenchmarking/flow/dfg_flow3d.html). GMSH is a powerful mesh generation tool that can be used to create complex geometries for FESTIM simulations. It supports a wide range of shapes, physical labels, and CAD import/export, making it ideal for defining detailed 2D or 3D domains. In this tutorial, we will cover: using GMSH directly from a Python script, converting a GMSH model into a dolfinx mesh that can be used with FESTIM, and generating a mesh from a CAD geometry (e.g. STEP file)`,
   preCode: `import numpy as np
 import os
 import gmsh

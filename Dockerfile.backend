@@ -11,7 +11,7 @@ RUN chown -R backend-ghost:backend-ghost /opt/conda /home/backend-ghost
 USER backend-ghost
 
 RUN conda create -n pv-env python=3.12 \
-    && conda install -n pv-env -c conda-forge numpy flask festim python-gmsh gmsh python-dotenv \
+    && conda install -n pv-env -c conda-forge nomkl numpy flask festim python-gmsh gmsh python-dotenv \
     && conda clean -afy
 
 COPY /python/backend.py /backend.py

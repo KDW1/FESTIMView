@@ -1,16 +1,6 @@
 name: festim-view
 
 services:
-  frontend:
-    build:
-      dockerfile: Dockerfile.web
-    ports:
-      - 3000:3000
-    x-google-cloudrun:ingress-container: true
-    environment:
-      - PRODUCTION=false
-      - BACKEND_DOMAIN=http://backend:8000
-      - NEXT_PUBLIC_TRAME_DOMAIN=http://localhost:8080
   backend:
     build:
       dockerfile: Dockerfile.backend
@@ -23,9 +13,24 @@ services:
   trame:
     build:
       dockerfile: Dockerfile.trame
-    ports: 
+    ports:
       - 8080:80
     volumes:
       - backend-data-1:/tmp
+
+  frontend:
+    build:
+      dockerfile: Dockerfile.web
+    ports:
+      - 3000:3000
+    x-google-cloudrun:
+      ingress-container: true
+    environment:
+      - PRODUCTION=false
+      - BACKEND_DOMAIN=http://backend:8000
+      - NEXT_PUBLIC_TRAME_DOMAIN=http://localhost:80
+    depends_on:
+      - backend
+      - trame
 volumes:
   backend-data-1:

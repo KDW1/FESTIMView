@@ -33,7 +33,7 @@ export default function TrameVisualizer({
   const tabs = simulation ? ["Window", "FESTIM"] : ["Window"]
   
   const IFRAME_ID = "my_frame"
-  const IFRAME_URL = process.env.NEXT_PUBLIC_TRAME_DOMAIN
+  // const IFRAME_URL = process.env.NEXT_PUBLIC_TRAME_DOMAIN
 
   const sendMessage = (value: { [key: string]: any }) => {
     let iframe: HTMLIFrameElement = document.getElementById(IFRAME_ID) as HTMLIFrameElement
@@ -71,7 +71,8 @@ export default function TrameVisualizer({
         }
       </div>
       <div className={`flex-col flex flex-1 ${mode == "window" ? "" : "hidden h-0"}`}>
-        <iframe id={IFRAME_ID} src={IFRAME_URL} className="h-full w-full" sandbox="allow-scripts allow-same-origin" />
+        {process.env.NEXT_PUBLIC_TRAME_DOMAIN}
+        <iframe id={IFRAME_ID} src={"http://localhost:8080"} className="h-full w-full" sandbox="allow-scripts allow-same-origin" />
       </div>
       {
         mode == "festim" && simulation &&
