@@ -21,6 +21,8 @@ services:
   frontend:
     build:
       dockerfile: Dockerfile.web
+      args:
+        NEXT_PUBLIC_TRAME_DOMAIN: http://localhost:8080
     ports:
       - 3000:3000
     x-google-cloudrun:
@@ -28,7 +30,6 @@ services:
     environment:
       - PRODUCTION=false
       - BACKEND_DOMAIN=http://backend:8000
-      - NEXT_PUBLIC_TRAME_DOMAIN=http://localhost:80
     depends_on:
       - backend
       - trame

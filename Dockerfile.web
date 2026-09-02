@@ -8,7 +8,8 @@ WORKDIR /app
 ENV FLASK_PORT=8000
 ENV PRODUCTION=false
 ENV BACKEND_DOMAIN=http://localhost:8000
-ENV TRAME_DOMAIN=http://localhost:8080
+ARG NEXT_PUBLIC_TRAME_DOMAIN
+ENV NEXT_PUBLIC_TRAME_DOMAIN=$NEXT_PUBLIC_TRAME_DOMAIN
 
 # Copy package files and install dependencies
 COPY package.json package-lock.json* ./
