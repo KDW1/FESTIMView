@@ -8,8 +8,6 @@ WORKDIR /app
 ENV FLASK_PORT=8000
 ENV PRODUCTION=false
 ENV BACKEND_DOMAIN=http://localhost:8000
-ARG NEXT_PUBLIC_TRAME_DOMAIN
-ENV NEXT_PUBLIC_TRAME_DOMAIN=$NEXT_PUBLIC_TRAME_DOMAIN
 
 # Copy package files and install dependencies
 COPY package.json package-lock.json* ./
@@ -26,6 +24,9 @@ COPY . .
 # Set environment variables for the build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+
+ARG NEXT_PUBLIC_TRAME_DOMAIN
+ENV NEXT_PUBLIC_TRAME_DOMAIN=$NEXT_PUBLIC_TRAME_DOMAIN
 
 # Build the Next.js application
 RUN npm run build
