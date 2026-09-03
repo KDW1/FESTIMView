@@ -71,7 +71,6 @@ export default function TrameVisualizer({
         }
       </div>
       <div className={`flex-col flex flex-1 ${mode == "window" ? "" : "hidden h-0"}`}>
-        {process.env.NEXT_PUBLIC_TRAME_DOMAIN}
         <iframe id={IFRAME_ID} src={process.env.NEXT_PUBLIC_TRAME_DOMAIN} className="h-full w-full" sandbox="allow-scripts allow-same-origin" />
       </div>
       {

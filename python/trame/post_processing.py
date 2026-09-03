@@ -347,10 +347,10 @@ class PostProcessing(TrameApp):
                                     ctx_name="view",
                                     style="width: 100%; height: 100%;",
                                 )
-                                with html.Div(
-                                    style="width:0px; height:0px"
-                                ):
-                                    plotly.Figure(ctx_name="plotly_display", display_logo=False, display_mode_bar="False")
+                                # with html.Div(
+                                #     style="width: 0%; height: 0%; display: hidden;"
+                                # ):
+                                #     plotly.Figure(ctx_name="plotly_display", display_logo=False, display_mode_bar="False")
                             else:
                                 with html.Div(style="height:90%; width:100%;"):
                                     plotly.Figure(ctx_name="plotly_display", display_logo=False, display_mode_bar="False")
