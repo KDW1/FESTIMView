@@ -425,7 +425,7 @@ export const exampleSimulation: FESTIMSim = {
   imageUrl: "/Example Simulation.png"
 }
 
-export const populateBindings: Function = (simulation: FESTIMSim, storedBindings: {values: {[key:string]: any}}[], empty: boolean = false) => {
+export const populateBindings: Function = (simulation: FESTIMSim, storedBindings: { values: { [key: string]: any } }[], empty: boolean = false) => {
   let bindings = []
   if (typeof storedBindings == "undefined") storedBindings = []
 
@@ -442,38 +442,41 @@ export const populateBindings: Function = (simulation: FESTIMSim, storedBindings
   for (let i = 0; i < simulation.steps.length; i++) {
     let step: FESTIMStep = simulation.steps[i]
     let values: { [key: string]: any } = {}
-    if (!empty) {
-      let storedBinding = storedBindings[i]
-      let objectKeys = null
 
-      if (storedBinding) {
-        let keys = Object.keys(storedBinding.values)
-        objectKeys = keys.filter(key => key.includes("."))
+    let storedBinding = storedBindings[i]
+    let objectKeys = null
+    let valid = false
+
+    if (storedBinding) {
+      let keys = Object.keys(storedBinding.values)
+      objectKeys = keys.filter(key => key.includes("."))
+      valid = storedBinding.values["valid"] ?? false
+    }
+
+    for (let setting of step.settings) {
+      let binding = setting.name ?? setting.title
+      let objectProps: string[] = []
+      if (objectKeys) {
+        objectProps = correspondingObjectProperties(objectKeys, binding)
       }
 
-      for (let setting of step.settings) {
-        let binding = setting.name ?? setting.title
-        let objectProps: string[] = []
-        if (objectKeys) {
-          objectProps = correspondingObjectProperties(objectKeys, binding)
+      if (setting.defaultValue || (storedBinding && binding in storedBinding.values)) {
+        values[binding] = setting.defaultValue ?? storedBinding.values[binding]
+        for (let objectProp of objectProps) {
+          values[objectProp] = storedBinding.values[objectProp]
         }
-
-        if (setting.defaultValue || (storedBinding && binding in storedBinding.values)) {
-          values[binding] = setting.defaultValue ?? storedBinding.values[binding]
-          for (let objectProp of objectProps) {
-            values[objectProp] = storedBinding.values[objectProp]
-          }
-        } else {
-          values[binding] = setting.list ? [{}] : ""
-        }
+      } else {
+        values[binding] = setting.list ? [{}] : ""
       }
     }
+
     bindings.push({
       index: i,
       name: step.name,
       title: step.title,
       snippet: "",
       values,
+      valid,
       recipe: step.recipe ?? "",
       exporting: step.exporting ?? false,
       exportAddress: step.exportAddress ?? null

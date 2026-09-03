@@ -94,7 +94,7 @@ export default function PythonCodeEditor({ pythonCode, evaluatingCode, processin
             <p className="font-semibold text-primary">Python Code Editor.
                 <br />
             </p>
-            <select value={themeName} onChange={(e) => setThemeName(e.target.value)} className="select-container" name="" id="">
+            <select value={themeName} onChange={(e) => setThemeName(e.target.value)} className="text-primary select-container" name="" id="">
                 <option className="border-blue-400 border-2" value="vs-light">VS Light</option>
                 <option className="border-blue-400 border-2" value="vs-dark">VS Dark</option>
                 {themeKeys.map((theme) => (
@@ -170,7 +170,7 @@ export default function PythonCodeEditor({ pythonCode, evaluatingCode, processin
                     setCopyingCode(true)
                     await navigator.clipboard.writeText(pythonCode)
                     setTimeout(()=>setCopyingCode(false), 500)
-                }} className={`px-2 py-1 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-300 hover:bg-primarybg duration-300 ease-in-out transition bg-lightbg rounded-md`}>
+                }} className={`px-2 py-1 cursor-pointer text-primary disabled:cursor-not-allowed disabled:bg-gray-300 hover:bg-primarybg duration-300 ease-in-out transition bg-lightbg rounded-md`}>
                     Copy Code
                 </button>
             </div>

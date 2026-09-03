@@ -83,23 +83,25 @@ export default function Home() {
   }
 
   const selectSimulation = (sim: FESTIMSim) => {
-        // Change the current simulation and reset other basic variables
-        // TODO: Check issue with snippets loading out of order
+    // Change the current simulation and reset other basic variables
+    // TODO: Check issue with snippets loading out of order
 
-        // As of now there probably won't be any overlapping keys between stored local bindings,
-        // but I should work on naming them for different simulations later on
-        console.log("Changing Simulation: ", loadBindingsFromLocalStorage()[sim.title])
-        setBindings(populateBindings(sim, loadBindingsFromLocalStorage()[sim.title]))
+    // As of now there probably won't be any overlapping keys between stored local bindings,
+    // but I should work on naming them for different simulations later on
+    console.log("Changing Simulation: ", loadBindingsFromLocalStorage()[sim.title])
+    if (sim.title != currentSimulation.title) {
+      setBindings(populateBindings(sim, loadBindingsFromLocalStorage()[sim.title]))
 
-        setCurrentSimulation(sim)
-        setMode("festim")
-        setPostProcessingDone(false)
-        setCurrentIndex(0)
-        setArgs([])
-        setExportFolderName("")
-        setExportWorkingDirectory("")
-        setSimulationsMenuVisible(false)
+      setCurrentSimulation(sim)
+      setMode("festim")
+      setPostProcessingDone(false)
+      setCurrentIndex(0)
+      setArgs([])
+      setExportFolderName("")
+      setExportWorkingDirectory("")
     }
+    setSimulationsMenuVisible(false)
+  }
 
   const parseRecipe = (indexedBinding: { values: { [key: string]: any }, recipe: string }) => {
     if (DEBUGGING_PARSER) console.log("Parsing with binding: ", indexedBinding)
@@ -161,7 +163,7 @@ export default function Home() {
 
           let expression = tokens.slice(currentIndex, closingIndex).join("")
           let cleanExpression = expression.replaceAll("{*", "{").replaceAll("*}", "}")
-          let [value, expressionValid]  = parseRecipe({ values: selectedBinding.values, recipe: expression })
+          let [value, expressionValid] = parseRecipe({ values: selectedBinding.values, recipe: expression })
 
           // console.log("Clean Expression: ", cleanExpression)
           out.push(value != cleanExpression ? value as string : `@${pageName}--${expression}@`)
@@ -212,7 +214,7 @@ export default function Home() {
           let arrayBinding = indexedBinding.values[arrayName]
           let expression = tokens.slice(currentIndex, closingIndex).join("")
 
-          let listExpressions : string[] = []
+          let listExpressions: string[] = []
 
           for (let binding of arrayBinding) {
             if (Object.keys(binding).length == 0) continue
@@ -250,14 +252,14 @@ export default function Home() {
 
   const updateCodeWithIndexedBinding = (indexedBinding: Binding, exclusive: boolean) => {
     if (exclusive) {
-      let [parsedRecipe, valid] = parseRecipe({values: indexedBinding.values, recipe: indexedBinding.recipe as string})
+      let [parsedRecipe, valid] = parseRecipe({ values: indexedBinding.values, recipe: indexedBinding.recipe as string })
       indexedBinding.snippet = parsedRecipe as string
       indexedBinding.valid = valid as boolean
       setPythonCode(indexedBinding.snippet)
     } else {
       let out = []
       for (let binding of bindings) {
-        let [parsedRecipe, valid] = parseRecipe({values: binding.values, recipe: binding.recipe as string})
+        let [parsedRecipe, valid] = parseRecipe({ values: binding.values, recipe: binding.recipe as string })
         binding.snippet = parsedRecipe as string
         binding.valid = valid as boolean
         if (binding.snippet) out.push(binding.snippet)
@@ -270,7 +272,7 @@ export default function Home() {
   }
 
   const identifyExportPath = (include_cwd_prefix = false) => {
-    if(IN_DEVELOPMENT) {
+    if (IN_DEVELOPMENT) {
       setExportFolderName(localStorage.getItem("exportFolderName") ?? exportFolderName)
       setExportWorkingDirectory(localStorage.getItem("exportWorkingDirectory") ?? exportWorkingDirectory)
     }
@@ -304,8 +306,19 @@ export default function Home() {
     let indexedBinding = bindings[currentIndex]
     if (binding == "*") {
       // Wildcard triggers rewriting the entire bindings system
-      setBindings(value)
       indexedBinding.values = value[currentIndex].values
+      console.log("Passing value: ", value)
+      for(let i = 0; i < value.length; i++) {
+        delete bindings[i].values["valid"]
+        console.log(Object.keys(value[i].values))
+        console.log(Object.keys(value[i].values).includes("valid"))
+        if(Object.keys(value[i].values).includes("valid")){
+          console.log(value[i].values)
+          value[i].valid = value[i].values["valid"]
+          delete value[i].values["valid"]
+        }
+      }
+      setBindings(value)
       if (indexedBinding.recipe) {
         updateCodeWithIndexedBinding(indexedBinding, snippetOnly)
       }
@@ -329,7 +342,7 @@ export default function Home() {
     let filepath = null
     if (!code) code = pythonCode
     setProcessingCode(true)
-    if (!postprocessing  && !downloadingExport) {
+    if (!postprocessing && !downloadingExport) {
       updateArgs([{
         message: evaluatingCode ? "Evaluating your expression..." : "Executing code...",
         status: "info"
@@ -421,7 +434,7 @@ export default function Home() {
                   console.log("Message with file details: ", message)
                   setExportFolderName(message.folder_name)
                   setExportWorkingDirectory(message.directory)
-                  if(IN_DEVELOPMENT) {
+                  if (IN_DEVELOPMENT) {
                     // Quick access to the last run's filepath so it makes some post processing debugging easier
                     localStorage.setItem("exportFolderName", message.folder_name)
                     localStorage.setItem("exportWorkingDirectory", message.directory)
@@ -455,7 +468,7 @@ export default function Home() {
       }])
       let filepath = exportFolderName
       let directory = exportWorkingDirectory
-      if(IN_DEVELOPMENT) {
+      if (IN_DEVELOPMENT) {
         filepath = localStorage.getItem("exportFolderName") ?? filepath
         setExportFolderName(filepath)
         directory = localStorage.getItem("exportWorkingDirectory") ?? directory
@@ -544,12 +557,12 @@ export default function Home() {
       }
     }
   }, [currentIndex, mode, currentSimulation])
-    const [simulationsMenuVisible, setSimulationsMenuVisible] = useState(false)
+  const [simulationsMenuVisible, setSimulationsMenuVisible] = useState(false)
 
   return (
     <div className="h-screen bg-primarybg px-16 py-8">
-      <SimulationsMenu selectSimulation={selectSimulation} simulationsMenuVisible={simulationsMenuVisible} setSimulationsMenuVisible={setSimulationsMenuVisible} simulations={PRESET_SIMULATIONS}/>
-      
+      <SimulationsMenu selectSimulation={selectSimulation} simulationsMenuVisible={simulationsMenuVisible} setSimulationsMenuVisible={setSimulationsMenuVisible} simulations={PRESET_SIMULATIONS} />
+
       <main className="relative w-full h-full overflow-y-clip mx-auto flex flex-col md:flex-row gap-4">
 
         <div className="w-full md:w-3/5 flex flex-col gap-4">

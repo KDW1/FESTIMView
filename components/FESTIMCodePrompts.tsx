@@ -402,6 +402,10 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                                     updateBindings("*", bindings)
                                 }
                                 reader.readAsText(file)
+                                
+                                let step = currentStep
+                                setCurrentStep(simulation.steps[0])
+                                setCurrentStep(step)
                             }
                         })
                         target.disabled = false
@@ -414,7 +418,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                         target.disabled = true
                         let a = document.createElement("a")
                         let link = new Blob([JSON.stringify(bindings.map((b) => {
-                            return { values: b.values }
+                            return { values: {...b.values, valid: b.valid} }
                         }))], { type: "application/json" })
                         a.href = URL.createObjectURL(link)
                         let date = new Date()
