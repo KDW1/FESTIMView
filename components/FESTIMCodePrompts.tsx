@@ -402,10 +402,6 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                                     updateBindings("*", bindings)
                                 }
                                 reader.readAsText(file)
-                                
-                                let step = currentStep
-                                setCurrentStep(simulation.steps[0])
-                                setCurrentStep(step)
                             }
                         })
                         target.disabled = false

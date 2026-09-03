@@ -103,10 +103,11 @@ export default function Home() {
     setSimulationsMenuVisible(false)
   }
 
-  const parseRecipe = (indexedBinding: { values: { [key: string]: any }, recipe: string }) => {
+  const parseRecipe = (indexedBinding: { values: { [key: string]: any }, recipe: string }, customBindings : any = null) => {
     if (DEBUGGING_PARSER) console.log("Parsing with binding: ", indexedBinding)
     let recipe = indexedBinding.recipe
     let modifiedRecipe = recipe
+    let bindingsToUse = customBindings ?? bindings
 
     // We invalidate when a local binding, {**} or $$ is lacking
     // When a page lacks that value we DON'T double-count
@@ -140,7 +141,7 @@ export default function Home() {
           // We have "@" + pageName + expression + "@"
           currentIndex += 1 // to page name
           let pageName = tokens[currentIndex]
-          let selectedBinding: Binding = bindings.filter(b => b.name == pageName)[0]
+          let selectedBinding: Binding = bindingsToUse.filter(b => b.name == pageName)[0]
 
           currentIndex += 1 // to expression
           let followingTokens = tokens.slice(currentIndex)
@@ -163,7 +164,7 @@ export default function Home() {
 
           let expression = tokens.slice(currentIndex, closingIndex).join("")
           let cleanExpression = expression.replaceAll("{*", "{").replaceAll("*}", "}")
-          let [value, expressionValid] = parseRecipe({ values: selectedBinding.values, recipe: expression })
+          let [value, expressionValid] = parseRecipe({ values: selectedBinding.values, recipe: expression }, bindingsToUse)
 
           // console.log("Clean Expression: ", cleanExpression)
           out.push(value != cleanExpression ? value as string : `@${pageName}--${expression}@`)
@@ -219,7 +220,7 @@ export default function Home() {
           for (let binding of arrayBinding) {
             if (Object.keys(binding).length == 0) continue
 
-            let [parsedExpression, expressionValid] = parseRecipe({ values: binding, recipe: expression })
+            let [parsedExpression, expressionValid] = parseRecipe({ values: binding, recipe: expression }, bindingsToUse)
             if (!expressionValid) valid = false
 
             listExpressions.push(parsedExpression as string)
@@ -250,16 +251,20 @@ export default function Home() {
     return [parsedTokens.join(""), valid]
   }
 
-  const updateCodeWithIndexedBinding = (indexedBinding: Binding, exclusive: boolean) => {
+  const updateCodeWithIndexedBinding = (indexedBinding: Binding, exclusive: boolean, customBindings : any = null) => {
+    console.log("Updating with: ", indexedBinding)
+    let bindingsToUse = customBindings ?? bindings
     if (exclusive) {
-      let [parsedRecipe, valid] = parseRecipe({ values: indexedBinding.values, recipe: indexedBinding.recipe as string })
+      let [parsedRecipe, valid] = parseRecipe({ values: indexedBinding.values, recipe: indexedBinding.recipe as string }, bindingsToUse)
       indexedBinding.snippet = parsedRecipe as string
       indexedBinding.valid = valid as boolean
       setPythonCode(indexedBinding.snippet)
     } else {
+      console.log("Not exclusive...")
       let out = []
-      for (let binding of bindings) {
-        let [parsedRecipe, valid] = parseRecipe({ values: binding.values, recipe: binding.recipe as string })
+      for (let binding of bindingsToUse) {
+        console.log(binding.values)
+        let [parsedRecipe, valid] = parseRecipe({ values: binding.values, recipe: binding.recipe as string }, bindingsToUse)
         binding.snippet = parsedRecipe as string
         binding.valid = valid as boolean
         if (binding.snippet) out.push(binding.snippet)
@@ -319,9 +324,8 @@ export default function Home() {
         }
       }
       setBindings(value)
-      if (indexedBinding.recipe) {
-        updateCodeWithIndexedBinding(indexedBinding, snippetOnly)
-      }
+      updateCodeWithIndexedBinding(value[currentIndex], false, value) // Lazy solution to updating all recipes
+      updateCodeWithIndexedBinding(value[currentIndex], snippetOnly, value)
       return
     }
     indexedBinding.values[binding] = value
