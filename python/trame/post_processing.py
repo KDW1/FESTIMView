@@ -199,7 +199,7 @@ class PostProcessing(TrameApp):
         self.most_recent_plot = self.plot_over_line
         self.active_view = "line_chart_view"
         self._build_ui()
-        self.ctx.plotly_display.update(configured_plot)
+        if(self.ctx.plotly_display): self.ctx.plotly_display.update(configured_plot)
     
     def update_view_with_plot(self):
         line_chart_view = simple.CreateView('XYChartView')

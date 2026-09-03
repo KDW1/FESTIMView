@@ -119,7 +119,7 @@ def execute_code():
                             yield json.dumps({
                                 "success": True,
                                 "output": output_str
-                            }) + "\n"
+                            })
                     exit_code = process.wait()
                     app.logger.info("Exit code: " + str(exit_code))
                     # read_bp_file_to("out/field_export.bp", "vtk_temp/example")
