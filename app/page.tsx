@@ -107,7 +107,7 @@ export default function Home() {
     if (DEBUGGING_PARSER) console.log("Parsing with binding: ", indexedBinding)
     let recipe = indexedBinding.recipe
     let modifiedRecipe = recipe
-    let bindingsToUse = customBindings ?? bindings
+    let bindingsToUse : Binding[] = customBindings ?? bindings
 
     // We invalidate when a local binding, {**} or $$ is lacking
     // When a page lacks that value we DON'T double-count
