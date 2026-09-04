@@ -2,7 +2,7 @@ import { ClassDictionary, FESTIMSim, genericSteps } from "../simulations";
 
 export const gmshSimulation: FESTIMSim = {
   title: "DFG 3D Laminar Benchmark with GMSH",
-  description: `In this tutorial, we will use the gmsh API to generate complex meshes. We will in this tutorial learn how to make the 3D mesh used in the DFG 3D laminar benchmark (https://wwwold.mathematik.tu-dortmund.de/~featflow/en/benchmarks/cfdbenchmarking/flow/dfg_flow3d.html). GMSH is a powerful mesh generation tool that can be used to create complex geometries for FESTIM simulations. It supports a wide range of shapes, physical labels, and CAD import/export, making it ideal for defining detailed 2D or 3D domains. In this tutorial, we will cover: using GMSH directly from a Python script, converting a GMSH model into a dolfinx mesh that can be used with FESTIM, and generating a mesh from a CAD geometry (e.g. STEP file)`,
+  description: `In this tutorial, we will cover: using GMSH directly from a Python script, converting a GMSH model into a dolfinx mesh that can be used with FESTIM, and generating a mesh from a CAD geometry (e.g. STEP file). We will learn how to make the 3D mesh used in the DFG 3D laminar benchmark (https://wwwold.mathematik.tu-dortmund.de/~featflow/en/benchmarks/cfdbenchmarking/flow/dfg_flow3d.html).`,
   preCode: `import numpy as np
 import os
 import gmsh
@@ -291,7 +291,8 @@ $vtx_exports--{*vtx_export.variable*} = F.VTXSpeciesExport(
 
     },
     genericSteps["run"]
-  ]
+  ],
+  cookieCutterSettings: `[{"values":{"L":"5.0","B":"0.41","H":"0.41","r":"0.05","valid":true}},{"values":{"valid":true}},{"values":{"problem_variable":"hydrogen_problem","valid":true}},{"values":{"valid":true}},{"values":{"materials":[{"material.variable":"material","material.name":"material_1","material.D_0":"1","material.E_D":"0"}],"valid":true}},{"values":{"valid":true}},{"values":{"valid":true}},{"values":{"specieses":[{"species.variable":"H","species.name":"H"}],"valid":true}},{"values":{"fixed_bcs":[{"fixed_bc.variable":"tube_fixed_bc","fixed_bc.surface_subdomain_variable":"tube_surf","fixed_bc.value":"0","fixed_bc.species_variable":"H"},{"fixed_bc.variable":"top_surface_bc","fixed_bc.surface_subdomain_variable":"top_surface","fixed_bc.value":"1","fixed_bc.species_variable":"H"},{"fixed_bc.variable":"bottom_surface_bc","fixed_bc.surface_subdomain_variable":"bottom_surface","fixed_bc.value":"2","fixed_bc.species_variable":"H"}],"valid":true}},{"values":{"temperature":"400","valid":true}},{"values":{"atoi":"1e-10","rtoi":"1e-10","transient":"False","valid":true}},{"values":{"field_export_list_variable":"concentration_field_exports","vtx_exports":[{"vtx_export.variable":"vtx_export","vtx_export.filename":"out/mesh.bp"}],"valid":true}},{"values":{"Run":"","valid":true}}]`
 }
 
 export const gmshClasses : ClassDictionary = {

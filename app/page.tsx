@@ -32,12 +32,11 @@ const IN_DEVELOPMENT = !process.env.PRODUCTION
 
 export const PRESET_SIMULATIONS = [
   permeation2DSimulation,
-  exampleSimulation,
   gmshSimulation
 ]
 
 export default function Home() {
-  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim>(PRESET_SIMULATIONS[2])
+  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim>(PRESET_SIMULATIONS[0])
 
   // Note this method of storing bindings locally will change in the future
   // Since I'm pretty sure this isn't reliable

@@ -448,7 +448,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                                     let lastIndex = simulation.steps.length - 1
                                     changeToStep(lastIndex)
                                 }} className="button">
-                                    Skip to Last Step
+                                    Skip to Run
                                 </button>
                             </>
                         }

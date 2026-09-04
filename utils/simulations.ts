@@ -36,6 +36,7 @@ export type FESTIMSim = {
   postCode?: string;
   imageUrl?: string;
   imageCaption?: string;
+  cookieCutterSettings?: string;
 }
 
 // Dictionary of FESTIM classes

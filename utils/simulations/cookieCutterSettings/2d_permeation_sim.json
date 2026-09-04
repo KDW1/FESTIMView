@@ -1,0 +1,215 @@
+[[
+    {
+        "values": {
+            "problem_variable": "hydrogen_problem",
+            "problem_type": "HydrogenTransportProblemDiscontinuous"
+        }
+    },
+    {
+        "values": {
+            "dolfinx_mesh_variable": "unique_mesh_name",
+            "nx": "20",
+            "ny": "20",
+            "xmin": "0.0",
+            "xmax": "1.0",
+            "ymin": "0.0",
+            "ymax": "1.0",
+            "coordinate_system": "cartesian",
+            "cell_type": "triangle"
+        }
+    },
+    {
+        "values": {
+            "materials": [
+                {
+                    "material.E_D": "0.0",
+                    "material.variable": "mat_1",
+                    "material.name": "mat_1",
+                    "material.D_0": "1.0",
+                    "material.K_S_0": "0.1",
+                    "material.E_K_S": "0.0"
+                },
+                {
+                    "material.variable": "mat_2",
+                    "material.name": "mat_2",
+                    "material.D_0": "0.1",
+                    "material.E_D": "0.0",
+                    "material.K_S_0": "0.5",
+                    "material.E_K_S": "0.0"
+                }
+            ]
+        }
+    },
+    {
+        "values": {
+            "epsilon_helper_variable": "1e-3",
+            "volumes": [
+                {
+                    "volume.variable": "volume_1",
+                    "volume.id": "1",
+                    "volume.material": "mat_1",
+                    "volume.locator": "lambda x: x[0] < 0.5 + eps"
+                },
+                {
+                    "volume.variable": "volume_2",
+                    "volume.id": "2",
+                    "volume.material": "mat_2",
+                    "volume.locator": "lambda x: x[0] >= 0.5 - eps"
+                }
+            ],
+            "surfaces": [
+                {
+                    "surface.variable": "surface_1",
+                    "surface.id": "3",
+                    "surface.locator": "lambda x: np.isclose(x[0], 0.0)",
+                    "surface.linked_volume_variable": "volume_1"
+                },
+                {
+                    "surface.variable": "surface_2",
+                    "surface.id": "4",
+                    "surface.locator": "lambda x: np.isclose(x[0], 0.0)",
+                    "surface.linked_volume_variable": "volume_2"
+                }
+            ],
+            "interfaces": [
+                {
+                    "interface.variable": "interface_1",
+                    "interface.id": "5",
+                    "interface.subdomains": "volume_1, volume_2",
+                    "interface.penalty_term": "100"
+                }
+            ]
+        }
+    },
+    {
+        "values": {
+            "specieses": [
+                {
+                    "species.variable": "H",
+                    "species.name": "H",
+                    "species.mobile": "True",
+                    "species.subdomains": "volume_1, volume_2"
+                },
+                {
+                    "species.variable": "H_trapped",
+                    "species.name": "H_trapped",
+                    "species.mobile": "False",
+                    "species.subdomains": "volume_1, volume_2"
+                },
+                {
+                    "species.variable": "empty_trap",
+                    "species.name": "empty_trap",
+                    "species.mobile": "False",
+                    "species.subdomains": "volume_1, volume_2"
+                }
+            ]
+        }
+    },
+    {
+        "values": {
+            "concentrations": [
+                {
+                    "concentration.variable": "ic_empty_trap",
+                    "concentration.species_variable": "empty_trap",
+                    "concentration.value": "1.0",
+                    "concentration.volume_variable": "volume_1"
+                }
+            ]
+        }
+    },
+    {
+        "values": {
+            "reactions": [
+                {
+                    "reaction.variable": "reaction_one",
+                    "reaction.reactants": "H, empty_trap",
+                    "reaction.product": "H_trapped",
+                    "reaction.k_0": "0.05",
+                    "reaction.E_k": "0.0",
+                    "reaction.p_0": "0.1",
+                    "reaction.E_p": "0.0",
+                    "reaction.volume_variable": "volume_1"
+                }
+            ]
+        }
+    },
+    {
+        "values": {
+            "fixed_bcs": [
+                {
+                    "fixed_bc.variable": "bc_1",
+                    "fixed_bc.surface_subdomain_variable": "surface_1",
+                    "fixed_bc.value": "1.0",
+                    "fixed_bc.species_variable": "H"
+                },
+                {
+                    "fixed_bc.variable": "bc_2",
+                    "fixed_bc.surface_subdomain_variable": "surface_2",
+                    "fixed_bc.value": "0.0",
+                    "fixed_bc.species_variable": "H"
+                }
+            ]
+        }
+    },
+    {
+        "values": {
+            "sources": [
+                {
+                    "source.variable": "source_1",
+                    "source.species_variable": "H",
+                    "source.volume_variable": "volume_1",
+                    "source.value": "lambda t: 3 if t < 0.5 else 0.0"
+                }
+            ]
+        }
+    },
+    {
+        "values": {
+            "temperature": "600.0"
+        }
+    },
+    {
+        "values": {
+            "atoi": "1e-10",
+            "rtoi": "1e-10",
+            "transient": "True",
+            "stepsize": "0.05",
+            "final_time": "2.0"
+        }
+    },
+    {
+        "values": {
+            "field_export_list_variable": "concentration_field_exports",
+            "derived_export_list_variable": "derived_quantities",
+            "vtx_exports": [
+                {
+                    "vtx_export.variable": "vtx_1",
+                    "vtx_export.volume_subdomain_variable": "volume_1",
+                    "vtx_export.filename": "out/test_export_filepath.bp",
+                    "vtx_export.field_expression": "hydrogen_problem.species"
+                }
+            ],
+            "surface_quantities": [
+                {
+                    "surface_quantity.variable": "surface_1",
+                    "surface_quantity.quantity_type": "SurfaceFlux",
+                    "surface_quantity.field_expression": "H",
+                    "surface_quantity.surface_variable": "surface_1"
+                }
+            ],
+            "volume_quantities": [
+                {
+                    "volume_quantity.variable": "volume_1",
+                    "volume_quantity.quantity_type": "TotalVolume",
+                    "volume_quantity.field_expression": "H",
+                    "volume_quantity.volume_variable": "volume_1"
+                }
+            ]
+        }
+    },
+    {
+        "values": {
+            "Run": ""
+        }
+    }
+]]
