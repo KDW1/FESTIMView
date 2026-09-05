@@ -10,6 +10,7 @@ import { initialize } from "next/dist/server/lib/render-server";
 import SimulationsMenu from "@/components/SimulationsMenu";
 import { permeation2DSimulation } from "@/utils/simulations/2d_permeation_sim";
 import { gmshSimulation } from "@/utils/simulations/gmsh_sim";
+import { multiVolumeGeometrySimulation } from "@/utils/simulations/multi_volume_geometry_sim";
 
 // TODO: Need to develop some full fledged context for the Python Code Editor in order to avoid prop drilling
 
@@ -32,11 +33,12 @@ const IN_DEVELOPMENT = !process.env.PRODUCTION
 
 export const PRESET_SIMULATIONS = [
   permeation2DSimulation,
-  gmshSimulation
+  gmshSimulation,
+  multiVolumeGeometrySimulation
 ]
 
 export default function Home() {
-  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim>(PRESET_SIMULATIONS[0])
+  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim>(multiVolumeGeometrySimulation)
 
   // Note this method of storing bindings locally will change in the future
   // Since I'm pretty sure this isn't reliable
@@ -70,6 +72,7 @@ export default function Home() {
   const [evaluatingCode, setEvaluatingCode] = useState(false)
   const [exportFolderName, setExportFolderName] = useState("")
   const [exportWorkingDirectory, setExportWorkingDirectory] = useState("")
+  const [file, setFile] = useState<File>()
 
   const updateArgs = (newArgs: ConsoleArg[]) => {
     setArgs(args => [...args, ...(newArgs.filter(el => el.message))])
@@ -325,6 +328,11 @@ export default function Home() {
       setBindings(value)
       updateCodeWithIndexedBinding(value[currentIndex], false, value) // Lazy solution to updating all recipes
       updateCodeWithIndexedBinding(value[currentIndex], snippetOnly, value)
+      return
+    }
+    if (binding == "*file") {
+      console.log("File: ", value)
+      setFile(value)
       return
     }
     indexedBinding.values[binding] = value

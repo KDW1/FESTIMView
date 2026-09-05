@@ -214,6 +214,24 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                             }
                         </select>
                     )
+                case "file":
+                    return (
+                        <input required={true} onChange={(e) => {
+                            console.log(e.target.files)
+                            let fileOfInterest = e.target.files[0]
+                            if(fileOfInterest.size > 5e6) {
+                                setAlertMode("error")
+                                setShowAlert(true)
+                                setAlerts(["The file size is too big, the file must be udner 5 MB"])
+                                setTimeout(()=>{
+                                    setShowAlert(false)
+                                    setAlerts([])
+                                }, 2000)
+                                e.target.value = null
+                            }
+                            updateBindings("*file", fileOfInterest)
+                        }} type="file" className="input" />
+                    )
                 case "run":
                     return (
                         <div className="flex flex-col gap-y-2">
