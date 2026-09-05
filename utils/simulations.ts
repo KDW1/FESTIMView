@@ -25,6 +25,8 @@ export type FESTIMStep = {
   recipe?: string; // Recipe for assembling Python code
   exporting?: boolean;
   exportAddress?: string; // Where the filepath for the exported item can be found
+  fileAddress?: string;
+  isFileContext?: boolean;
 }
 
 // FESTIM simulation, composed of multiple steps
@@ -480,7 +482,9 @@ export const populateBindings: Function = (simulation: FESTIMSim, storedBindings
       valid,
       recipe: step.recipe ?? "",
       exporting: step.exporting ?? false,
-      exportAddress: step.exportAddress ?? null
+      exportAddress: step.exportAddress ?? null,
+      isFileContext: true,
+      fileAddress: step.fileAddress ?? null
     })
   }
   return bindings

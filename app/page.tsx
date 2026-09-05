@@ -25,7 +25,9 @@ export type Binding = {
   },
   recipe?: string,
   exporting?: boolean,
-  exportAddress?: string
+  exportAddress?: string,
+  isFileContext?: boolean,
+  fileAddress?: string
 }
 
 const DEBUGGING_PARSER = false
@@ -73,6 +75,7 @@ export default function Home() {
   const [exportFolderName, setExportFolderName] = useState("")
   const [exportWorkingDirectory, setExportWorkingDirectory] = useState("")
   const [file, setFile] = useState<File>()
+  const [fileContextCode, setFileContextCode] = useState("")
 
   const updateArgs = (newArgs: ConsoleArg[]) => {
     setArgs(args => [...args, ...(newArgs.filter(el => el.message))])
@@ -105,11 +108,11 @@ export default function Home() {
     setSimulationsMenuVisible(false)
   }
 
-  const parseRecipe = (indexedBinding: { values: { [key: string]: any }, recipe: string }, customBindings : any = null) => {
+  const parseRecipe = (indexedBinding: { values: { [key: string]: any }, recipe: string }, customBindings: any = null) => {
     if (DEBUGGING_PARSER) console.log("Parsing with binding: ", indexedBinding)
     let recipe = indexedBinding.recipe
     let modifiedRecipe = recipe
-    let bindingsToUse : Binding[] = customBindings ?? bindings
+    let bindingsToUse: Binding[] = customBindings ?? bindings
 
     // We invalidate when a local binding, {**} or $$ is lacking
     // When a page lacks that value we DON'T double-count
@@ -253,7 +256,7 @@ export default function Home() {
     return [parsedTokens.join(""), valid]
   }
 
-  const updateCodeWithIndexedBinding = (indexedBinding: Binding, exclusive: boolean, customBindings : any = null) => {
+  const updateCodeWithIndexedBinding = (indexedBinding: Binding, exclusive: boolean, customBindings: any = null) => {
     console.log("Updating with: ", indexedBinding)
     let bindingsToUse = customBindings ?? bindings
     if (exclusive) {
@@ -284,6 +287,7 @@ export default function Home() {
       setExportWorkingDirectory(localStorage.getItem("exportWorkingDirectory") ?? exportWorkingDirectory)
     }
     let relevant_filepath = null
+    let relevant_filename = null
     for (let binding of bindings) {
       if (binding.exporting && binding.exportAddress) {
         let exportAddress = binding.exportAddress
@@ -301,12 +305,19 @@ export default function Home() {
           console.log("Post processing filepath is: ", relevant_filepath)
         }
       }
+      if (binding.isFileContext && binding.fileAddress) {
+        console.log("Checking at")
+        console.log("File Context Binding: ", binding)
+        let fileAddress = binding.fileAddress
+        relevant_filename = binding.values[fileAddress]
+        console.log("Post processing filename for file uploaded is: ", relevant_filename)
+      }
     }
     console.log("Working Directory: ", exportWorkingDirectory)
     if (include_cwd_prefix) relevant_filepath = `${exportWorkingDirectory}/${relevant_filepath}`
     console.log("Relevant Path: ", relevant_filepath)
     setPostProcessingFilepath(relevant_filepath)
-    return relevant_filepath
+    return [relevant_filepath, relevant_filename]
   }
 
   const updateBindings = (binding: string, value: any) => {
@@ -315,11 +326,11 @@ export default function Home() {
       // Wildcard triggers rewriting the entire bindings system
       indexedBinding.values = value[currentIndex].values
       console.log("Passing value: ", value)
-      for(let i = 0; i < value.length; i++) {
+      for (let i = 0; i < value.length; i++) {
         delete bindings[i].values["valid"]
         console.log(Object.keys(value[i].values))
         console.log(Object.keys(value[i].values).includes("valid"))
-        if(Object.keys(value[i].values).includes("valid")){
+        if (Object.keys(value[i].values).includes("valid")) {
           console.log(value[i].values)
           value[i].valid = value[i].values["valid"]
           delete value[i].values["valid"]
@@ -333,6 +344,27 @@ export default function Home() {
     if (binding == "*file") {
       console.log("File: ", value)
       setFile(value)
+      if (indexedBinding) {
+
+      }
+      let result = identifyExportPath()
+      let filename = result[1]
+      console.log(indexedBinding)
+      if (indexedBinding && indexedBinding.fileAddress) {
+        let filename = indexedBinding.values[indexedBinding.fileAddress]
+        const reader = new FileReader()
+        reader.onload = () => {
+          console.log(reader.result)
+          console.log("Filename: ", filename)
+          let contextCode = `mesh_string = """${reader.result}
+"""
+with open("${filename}", "w") as f:
+    f.write(mesh_string)\n\n`
+          setFileContextCode(contextCode)
+          console.log(contextCode)
+        }
+        reader.readAsText(value)
+      }
       return
     }
     indexedBinding.values[binding] = value
@@ -351,6 +383,7 @@ export default function Home() {
   const sendPythonRequest = async (code?: string, postprocessing?: boolean, downloadingExport?: boolean) => {
     // TODO: Catch Response 500 errors, switch the modes to a switch statement, check error catching as a whole
     let filepath = null
+    let filename = ""
     if (!code) code = pythonCode
     setProcessingCode(true)
     if (!postprocessing && !downloadingExport) {
@@ -367,10 +400,7 @@ export default function Home() {
             code,
             postprocessing,
             filepath
-          }),
-          headers: {
-            "Content-Type": "application/json"
-          }
+          })
         })
         let data = await res.json()
 
@@ -417,13 +447,13 @@ export default function Home() {
         message: "Preparing to post-process",
         status: "notification"
       }])
-      filepath = identifyExportPath()
-
+      let result = identifyExportPath()
+      filepath = result[0]
       try {
         let res = await fetch("/api/postProcessing", {
           method: "POST",
           body: JSON.stringify({
-            code,
+            code: fileContextCode+code,
             filepath
           })
         })

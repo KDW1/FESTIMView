@@ -4,14 +4,11 @@ const domainsStep: FESTIMStep = {
   title: "4. Domains",
   settings: [
     {
-      title: "epsilon_helper_variable",
-      type: "number",
-    },
-    {
       title: "Volume Subdomains",
       type: "volume",
       name: "volumes",
       itemName: "volume",
+      propertiesToExclude: ["locator"],
       list: true
     },
     {
@@ -19,6 +16,7 @@ const domainsStep: FESTIMStep = {
       type: "surface",
       name: "surfaces",
       itemName: "surface",
+      propertiesToExclude: ["locator"],
       list: true
     },
     {
@@ -30,9 +28,9 @@ const domainsStep: FESTIMStep = {
     }
   ],
   recipe: `# 4. Create domains
-$volumes--{*volume.variable*}=F.VolumeSubdomain(id={*volume.id*}, material={*volume.material*}, locator={*volume.locator*})$
+$volumes--{*volume.variable*}=F.VolumeSubdomain(id={*volume.id*}, material={*volume.material*})$
 
-$surfaces--{*surface.variable*}=F.SurfaceSubdomain(id={*surface.id*}, locator={*surface.locator*})$
+$surfaces--{*surface.variable*}=F.SurfaceSubdomain(id={*surface.id*})$
 
 @problem--{*problem_variable*}@.subdomains = [$volumes--{*volume.variable*}, $$surfaces--{*surface.variable*}, $]
 
@@ -52,6 +50,8 @@ export const multiVolumeGeometrySimulation : FESTIMSim = {
       {
         title: "GMSH Calculations",
         description: ".MSH Upload",
+        fileAddress: "filename",
+        isFileContext: true,
         settings: [
             {
                 title: "File Name",
@@ -59,12 +59,13 @@ export const multiVolumeGeometrySimulation : FESTIMSim = {
                 type: "string"
             },
             {
-                title: "File of Interest",
+                title: ".MSH File Upload",
                 name: "file",
                 type: "file"
             }
         ],
-        recipe: `from mpi4py import MPI
+        recipe: `from dolfinx.io import gmsh as gmshio
+from mpi4py import MPI
 import festim as F
 
 mesh_data = gmshio.read_from_msh(
@@ -120,7 +121,7 @@ cell_tags.name = "Cell markers"`
             name: "meshtags",
             settings: [],
             recipe: `@problem--{*problem_variable*}@.facet_meshtags = facet_tags
-    @problem--{*problem_variable*}@.volume_meshtags = cell_tags`
+@problem--{*problem_variable*}@.volume_meshtags = cell_tags`
         },
         {
         title: "Species",
@@ -136,10 +137,9 @@ cell_tags.name = "Cell markers"`
         ],
         recipe:
           `# Create species
-    $specieses--{*species.variable*} = F.Species(name="{*species.name*}, subdomains={*species.subdomains*}")
-    $
+$specieses--{*species.variable*} = F.Species(name="{*species.name*}", subdomains=[{*species.subdomains*}])$
     
-    @problem--{*problem_variable*}@.species = [$specieses--{*species.variable*}, $]`
+@problem--{*problem_variable*}@.species = [$specieses--{*species.variable*}, $]`
       },
         genericSteps["boundaryConditions"],
         genericSteps["temperature"],
@@ -164,9 +164,9 @@ cell_tags.name = "Cell markers"`
           },
         ],
         recipe: `# Settings
-    @problem--{*problem_variable*}@.settings = F.Settings(
-        atol={*atoi*}, rtol={*rtoi*}, transient={*transient*}
-    )`
+@problem--{*problem_variable*}@.settings = F.Settings(
+    atol={*atoi*}, rtol={*rtoi*}, transient={*transient*}
+)`
       },
         {
           title: "Exports",
@@ -183,19 +183,19 @@ cell_tags.name = "Cell markers"`
             title: "VTX Species Exports",
             type: "vtx_export",
             name: "vtx_exports",
-            propertiesToExclude: ["volume_subdomain_variable", "field_expression"],
+            propertiesToExclude: ["field_expression"],
             list: true
           },],
           recipe: `# Exports
-    $vtx_exports--{*vtx_export.variable*} = F.VTXSpeciesExport(
-      filename=f"{*vtx_export.filename*}",
-      field=@problem--{*problem_variable*}.species@,
-      subdomain=top_volume
-    )$
-    
-    {*field_export_list_variable*} = [$vtx_exports--{*vtx_export.variable*}, $]
-    
-    @problem--{*problem_variable*}@.exports = {*field_export_list_variable*}`
+$vtx_exports--{*vtx_export.variable*} = F.VTXSpeciesExport(
+  filename=f"{*vtx_export.filename*}",
+  field=@problem--{*problem_variable*}.species@,
+  subdomain={*vtx_export.volume_subdomain_variable*},
+)$
+
+{*field_export_list_variable*} = [$vtx_exports--{*vtx_export.variable*}, $]
+
+@problem--{*problem_variable*}@.exports = {*field_export_list_variable*}`
     
         },
         genericSteps["run"]

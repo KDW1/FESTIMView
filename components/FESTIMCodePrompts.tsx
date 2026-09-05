@@ -218,6 +218,7 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                     return (
                         <input required={true} onChange={(e) => {
                             console.log(e.target.files)
+                            if(!e.target.files) return
                             let fileOfInterest = e.target.files[0]
                             if(fileOfInterest.size > 5e6) {
                                 setAlertMode("error")
@@ -227,10 +228,10 @@ export default function FESTIMCodePrompts({ simulation, processingCode, postProc
                                     setShowAlert(false)
                                     setAlerts([])
                                 }, 2000)
-                                e.target.value = null
+                                return
                             }
                             updateBindings("*file", fileOfInterest)
-                        }} type="file" className="input" />
+                        }} type="file" accept=".msh" className="input" />
                     )
                 case "run":
                     return (

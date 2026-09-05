@@ -43,7 +43,8 @@ export default function TrameVisualizer({
     }, "*")
   }
   const loadData = () => {
-    let filepath = identifyExportPath(true)
+    let result = identifyExportPath(true)
+    let filepath = result[0]
     console.log("Filepath to be read: ", filepath)
     sendMessage({ "action": "downloadData", "filepath": filepath })
   }
