@@ -1,7 +1,7 @@
 import { FESTIMSim, FESTIMStep, genericSteps } from "../simulations";
 
 const domainsStep: FESTIMStep = {
-  title: "4. Domains",
+  title: "Domains",
   settings: [
     {
       title: "Volume Subdomains",

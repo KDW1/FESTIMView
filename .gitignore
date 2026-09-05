@@ -8,6 +8,7 @@
 /gmsh
 /python/festim/
 /paraview
+/out
 /node_modules
 /.pnp
 .pnp.*

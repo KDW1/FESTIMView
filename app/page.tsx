@@ -11,6 +11,7 @@ import SimulationsMenu from "@/components/SimulationsMenu";
 import { permeation2DSimulation } from "@/utils/simulations/2d_permeation_sim";
 import { gmshSimulation } from "@/utils/simulations/gmsh_sim";
 import { multiVolumeGeometrySimulation } from "@/utils/simulations/multi_volume_geometry_sim";
+import { importCadSimulation } from "@/utils/simulations/import_cad_sim";
 
 // TODO: Need to develop some full fledged context for the Python Code Editor in order to avoid prop drilling
 
@@ -36,11 +37,12 @@ const IN_DEVELOPMENT = !process.env.PRODUCTION
 export const PRESET_SIMULATIONS = [
   permeation2DSimulation,
   gmshSimulation,
-  multiVolumeGeometrySimulation
+  multiVolumeGeometrySimulation,
+  importCadSimulation
 ]
 
 export default function Home() {
-  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim>(multiVolumeGeometrySimulation)
+  const [currentSimulation, setCurrentSimulation] = useState<FESTIMSim>(importCadSimulation)
 
   // Note this method of storing bindings locally will change in the future
   // Since I'm pretty sure this isn't reliable
@@ -316,7 +318,7 @@ export default function Home() {
     console.log("Working Directory: ", exportWorkingDirectory)
     if (include_cwd_prefix) relevant_filepath = `${exportWorkingDirectory}/${relevant_filepath}`
     console.log("Relevant Path: ", relevant_filepath)
-    setPostProcessingFilepath(relevant_filepath)
+    if(relevant_filepath) setPostProcessingFilepath(relevant_filepath)
     return [relevant_filepath, relevant_filename]
   }
 
